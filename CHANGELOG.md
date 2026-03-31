@@ -2,8 +2,11 @@
 
 ## 2026-03-31
 
-- Se creo la estructura base del proyecto Flask para el MVP.
-- Se configuro app factory con Blueprints y SQLAlchemy.
-- Se dejo SQLite operativo con modelo inicial `Project`.
-- Se agregaron dashboard y pantalla placeholder de creacion de proyecto.
-- Se incorporo documentacion inicial y guia de continuidad.
+- Se implemento la Fase 2 sobre la base existente sin rehacer el proyecto.
+- Se agregaron los modelos `Project`, `UploadedModel`, `DrawingJob`, `ExportFile` y `Template`.
+- Se incorporaron relaciones simples entre proyecto, drawing jobs, exports y templates.
+- Se agrego sincronizacion basica del esquema para una base heredada de Fase 1.
+- Se sumo seed inicial de template industrial basico.
+- Se implementaron alta real, listado y detalle de proyectos con guardado en SQLite.
+- Se agrego `init_db.py` como script simple de inicializacion.
+- Se ampliaron las pruebas automaticas para cubrir persistencia y vistas de proyectos.

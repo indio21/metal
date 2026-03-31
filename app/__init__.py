@@ -1,7 +1,8 @@
 from flask import Flask
 
-from config import config_by_name
 from app.extensions import db
+from app.services.database import initialize_database, register_database_commands
+from config import config_by_name
 
 
 def create_app(config_name: str | None = None) -> Flask:
@@ -11,12 +12,13 @@ def create_app(config_name: str | None = None) -> Flask:
 
     initialize_extensions(app)
     register_blueprints(app)
+    register_database_commands(app)
     ensure_directories(app)
 
     with app.app_context():
-        from app.models.project import Project
+        from app import models as registered_models  # noqa: F401
 
-        db.create_all()
+        initialize_database()
 
     return app
 

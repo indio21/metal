@@ -2,29 +2,31 @@
 
 ## Estado actual
 
-La Fase 1 quedo completa con base Flask funcional, SQLite, layout Bootstrap, dashboard y placeholder de creacion de proyecto.
+La Fase 2 quedo completa con persistencia real de proyectos, modelos base del dominio, listado, alta y detalle funcionando sobre SQLite.
 
 ## Siguiente fase exacta
 
-Continuar con la Fase 2 enfocandose en:
+Continuar con la Fase 3 enfocandose en:
 
-- alta real de proyectos
-- formulario persistido en SQLite
 - carga controlada de archivos `STEP`, `STP`, `IGES` e `IGS`
-- validaciones basicas de nombre, extension y almacenamiento en `uploads/`
+- validaciones de extension, nombre y tamano
+- almacenamiento fisico en `uploads/`
+- creacion real de registros `UploadedModel`
 - asociacion del archivo CAD al proyecto
+- mensajes de error claros para archivos no soportados
 
 ## Restricciones a respetar
 
-- No implementar todavia generacion de drawings 2D.
-- No integrar todavia FreeCAD ni TechDraw si no es estrictamente necesario.
+- No implementar todavia FreeCAD ni TechDraw.
+- No generar drawings 2D en esta fase.
 - No agregar exportacion PDF/DXF/SVG en esta fase.
-- Mantener Ollama como opcional y todavia sin dependencia obligatoria.
+- Mantener Ollama como opcional y aun sin dependencia obligatoria.
 
 ## Como retomar el trabajo
 
 1. Inspeccionar primero la estructura actual del repositorio.
 2. Leer `README.md`, `CHANGELOG.md` y este archivo.
-3. Ejecutar `pip install -r requirements.txt` si faltan dependencias.
-4. Validar arranque con `python run.py`.
-5. Continuar solo con la proxima fase pendiente sin rehacer la base existente.
+3. Activar `.venv`.
+4. Ejecutar `python init_db.py`.
+5. Validar arranque con `python run.py`.
+6. Continuar solo con la proxima fase pendiente sin rehacer la base existente.

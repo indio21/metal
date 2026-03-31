@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} | Metal MVP{% endblock %}
+
+{% block content %}
+<section class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+  <div>
+    <span class="badge text-bg-light border mb-3">Detalle de proyecto</span>
+    <h1 class="h3 mb-2">{{ project.name }}</h1>
+    <p class="text-secondary mb-0">
+      Vista simple de seguimiento para la pieza individual. Las etapas CAD, drawing y exportacion se conectaran en fases posteriores.
+    </p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Volver al listado</a>
+    <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Nuevo proyecto</a>
+  </div>
+</section>
+
+<section class="row g-4">
+  <div class="col-lg-8">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Datos base</h2>
+        <dl class="row mb-0 project-meta">
+          <dt class="col-sm-4">Codigo de pieza</dt>
+          <dd class="col-sm-8">{{ project.part_number or "Sin codigo asignado" }}</dd>
+          <dt class="col-sm-4">Material</dt>
+          <dd class="col-sm-8">{{ project.material or "No definido" }}</dd>
+          <dt class="col-sm-4">Estado</dt>
+          <dd class="col-sm-8"><span class="badge rounded-pill text-bg-secondary">{{ project.status }}</span></dd>
+          <dt class="col-sm-4">Creado</dt>
+          <dd class="col-sm-8">{{ project.created_at.strftime("%Y-%m-%d %H:%M") }}</dd>
+          <dt class="col-sm-4">Actualizado</dt>
+          <dd class="col-sm-8">{{ project.updated_at.strftime("%Y-%m-%d %H:%M") }}</dd>
+          <dt class="col-sm-4">Notas</dt>
+          <dd class="col-sm-8">{{ project.notes or "Sin notas cargadas." }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Estado del flujo MVP</h2>
+        <div class="stack-panel">
+          <div class="stack-item">
+            <span class="stack-label">Modelos cargados</span>
+            <strong class="stack-value">{{ project.uploaded_models|length }}</strong>
+          </div>
+          <div class="stack-item">
+            <span class="stack-label">Drawing jobs</span>
+            <strong class="stack-value">{{ project.drawing_jobs|length }}</strong>
+          </div>
+          <div class="stack-item">
+            <span class="stack-label">Exports generados</span>
+            <strong class="stack-value">{{ project.export_files|length }}</strong>
+          </div>
+        </div>
+        <p class="small text-secondary mt-3 mb-0">
+          En esta fase solo queda implementada la persistencia. Los contadores se activaran a medida que avancemos con CAD y exportacion.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

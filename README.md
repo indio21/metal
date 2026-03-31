@@ -1,15 +1,25 @@
 # Metal MVP
 
-Base inicial para un MVP web orientado a metalurgica. Esta Fase 1 deja preparada una aplicacion Flask con estructura modular, SQLite, layout base con Bootstrap y pantallas minimas para dashboard y creacion de proyecto.
+Base inicial para un MVP web orientado a metalurgica. Esta Fase 2 extiende la app Flask existente con persistencia real de proyectos, relaciones base del dominio y vistas operativas para alta, listado y detalle.
 
 ## Alcance actual
 
 - App Flask funcional con patron app factory
 - Configuracion por entorno (`development`, `testing`, `production`)
-- Persistencia preparada con SQLAlchemy y SQLite
-- Dashboard inicial
-- Pantalla placeholder para creacion de proyectos
-- Estructura lista para integrar carga STEP/IGES en la proxima fase
+- Persistencia real con SQLAlchemy y SQLite
+- Dashboard inicial con acceso al flujo de proyectos
+- Alta real de proyectos
+- Listado de proyectos guardados
+- Detalle simple de proyecto
+- Modelos base del MVP preparados para fases futuras
+
+## Modelos disponibles
+
+- `Project`
+- `UploadedModel`
+- `DrawingJob`
+- `ExportFile`
+- `Template`
 
 ## Estructura del proyecto
 
@@ -27,6 +37,7 @@ Base inicial para un MVP web orientado a metalurgica. Esta Fase 1 deja preparada
 /exports
 /tests
 run.py
+init_db.py
 config.py
 requirements.txt
 README.md
@@ -37,21 +48,26 @@ NEXT_STEPS.md
 ## Requisitos
 
 - Python 3.11
-- Entorno local con `pip`
+- Entorno virtual local
 
 ## Puesta en marcha
 
-1. Crear y activar un entorno virtual.
-2. Instalar dependencias:
+1. Activar el entorno virtual:
+
+```bash
+.venv\Scripts\Activate.ps1
+```
+
+2. Instalar dependencias si hace falta:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Copiar variables de entorno si hace falta:
+3. Inicializar o sincronizar la base de datos:
 
 ```bash
-copy .env.example .env
+python init_db.py
 ```
 
 4. Ejecutar la app:
@@ -78,14 +94,23 @@ DATABASE_URL=sqlite:///metal.db
 pytest
 ```
 
-## Estado de continuidad
+## Estado de la base
 
-- La app crea las tablas automaticamente al iniciar.
-- No hay todavia carga de archivos CAD, integracion con FreeCAD, drawings ni exportacion.
-- `uploads/` y `exports/` ya estan creados para las siguientes fases.
+- La aplicacion crea las tablas faltantes automaticamente al iniciar.
+- Si existe una base previa de Fase 1, `init_db.py` sincroniza el esquema minimo necesario para seguir trabajando.
+- Se deja seed inicial de template industrial basico para futuras fases de drawing.
+
+## Estado funcional de la Fase 2
+
+- Ya podes crear proyectos reales y guardarlos en SQLite.
+- Ya podes listar proyectos y entrar a su detalle.
+- Todavia no hay carga real de archivos STEP/IGES.
+- Todavia no hay integracion con FreeCAD, drawing generation, exportacion ni Ollama.
 
 ## Como retomar si se interrumpe
 
 1. Revisar `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
-2. Verificar que la app siga arrancando con `python run.py`.
-3. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.
+2. Activar `.venv`.
+3. Ejecutar `python init_db.py` para asegurar la base.
+4. Validar arranque con `python run.py`.
+5. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.

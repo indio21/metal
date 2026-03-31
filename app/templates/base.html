@@ -20,6 +20,7 @@
         </a>
         <div class="d-flex gap-2">
           <a class="btn btn-outline-dark btn-sm" href="{{ url_for('main.dashboard') }}">Dashboard</a>
+          <a class="btn btn-outline-dark btn-sm" href="{{ url_for('projects.index') }}">Proyectos</a>
           <a class="btn btn-primary btn-sm" href="{{ url_for('projects.new_project') }}">Nuevo proyecto</a>
         </div>
       </div>
@@ -27,6 +28,19 @@
 
     <main class="py-5">
       <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-4">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-sm" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
       </div>
     </main>

@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template
 
-from app.models.project import Project
+from app.models import Project
 
 main_bp = Blueprint("main", __name__)
 

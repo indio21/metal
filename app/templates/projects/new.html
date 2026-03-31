@@ -4,39 +4,85 @@
 
 {% block content %}
 <section class="row justify-content-center">
-  <div class="col-xl-8">
+  <div class="col-xl-9">
     <div class="card shadow-sm">
       <div class="card-body p-4 p-lg-5">
-        <span class="badge text-bg-warning-subtle border mb-3">Placeholder Fase 1</span>
-        <h1 class="h3 mb-3">Crear proyecto</h1>
-        <p class="text-secondary mb-4">
-          Esta pantalla deja preparado el flujo base de alta. En Fase 2 vamos a conectar el formulario
-          con persistencia real y con la carga de archivos STEP/IGES.
-        </p>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <span class="badge text-bg-primary-subtle border mb-3">Fase 2 activa</span>
+            <h1 class="h3 mb-2">Crear proyecto</h1>
+            <p class="text-secondary mb-0">
+              Esta alta ya guarda datos reales en SQLite y deja listo el proyecto para la futura carga STEP/IGES.
+            </p>
+          </div>
+          <a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Ver listado</a>
+        </div>
 
-        <form class="row g-3">
+        <form class="row g-3" method="post" novalidate>
           <div class="col-md-6">
             <label class="form-label" for="name">Nombre del proyecto</label>
-            <input class="form-control" id="name" type="text" placeholder="Ej. Soporte eje linea A" disabled>
+            <input
+              class="form-control{% if errors.get('name') %} is-invalid{% endif %}"
+              id="name"
+              name="name"
+              type="text"
+              placeholder="Ej. Soporte eje linea A"
+              value="{{ form_data.name }}"
+              required
+            >
+            {% if errors.get('name') %}
+              <div class="invalid-feedback">{{ errors.get("name") }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="status">Estado inicial</label>
+            <select
+              class="form-select{% if errors.get('status') %} is-invalid{% endif %}"
+              id="status"
+              name="status"
+            >
+              {% for value, label in status_options %}
+                <option value="{{ value }}" {% if form_data.status == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            {% if errors.get('status') %}
+              <div class="invalid-feedback">{{ errors.get("status") }}</div>
+            {% endif %}
           </div>
           <div class="col-md-6">
             <label class="form-label" for="part_number">Codigo de pieza</label>
-            <input class="form-control" id="part_number" type="text" placeholder="Ej. SOP-001" disabled>
+            <input
+              class="form-control"
+              id="part_number"
+              name="part_number"
+              type="text"
+              placeholder="Ej. SOP-001"
+              value="{{ form_data.part_number }}"
+            >
           </div>
           <div class="col-md-6">
             <label class="form-label" for="material">Material</label>
-            <input class="form-control" id="material" type="text" placeholder="Ej. Acero SAE 1010" disabled>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label" for="cad_file">Archivo CAD</label>
-            <input class="form-control" id="cad_file" type="file" disabled>
+            <input
+              class="form-control"
+              id="material"
+              name="material"
+              type="text"
+              placeholder="Ej. Acero SAE 1010"
+              value="{{ form_data.material }}"
+            >
           </div>
           <div class="col-12">
             <label class="form-label" for="notes">Notas</label>
-            <textarea class="form-control" id="notes" rows="4" placeholder="Informacion adicional" disabled></textarea>
+            <textarea
+              class="form-control"
+              id="notes"
+              name="notes"
+              rows="4"
+              placeholder="Informacion adicional del proyecto"
+            >{{ form_data.notes }}</textarea>
           </div>
           <div class="col-12 d-flex flex-wrap gap-2 pt-2">
-            <button class="btn btn-primary" type="button" disabled>Guardar proyecto</button>
+            <button class="btn btn-primary" type="submit">Guardar proyecto</button>
             <a class="btn btn-outline-secondary" href="{{ url_for('main.dashboard') }}">Volver al dashboard</a>
           </div>
         </form>

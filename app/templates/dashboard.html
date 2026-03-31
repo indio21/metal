@@ -14,7 +14,7 @@
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Crear proyecto</a>
-        <span class="btn btn-outline-secondary disabled">Carga CAD disponible en Fase 2</span>
+        <a class="btn btn-outline-light" href="{{ url_for('projects.index') }}">Ver proyectos</a>
       </div>
     </div>
     <div class="col-lg-4">
@@ -62,7 +62,9 @@
           <div class="list-group list-group-flush">
             {% for project in recent_projects %}
               <div class="list-group-item px-0">
-                <strong>{{ project.name }}</strong>
+                <a class="text-decoration-none fw-semibold" href="{{ url_for('projects.detail', project_id=project.id) }}">
+                  {{ project.name }}
+                </a>
                 <div class="small text-secondary">
                   {{ project.part_number or "Sin codigo" }} - {{ project.status }}
                 </div>
@@ -71,7 +73,7 @@
           </div>
         {% else %}
           <p class="text-secondary mb-0">
-            Todavia no hay proyectos cargados. La pantalla de alta queda lista como placeholder para la siguiente iteracion.
+            Todavia no hay proyectos cargados. Ya podes crear el primero y guardarlo en SQLite desde esta fase.
           </p>
         {% endif %}
       </div>

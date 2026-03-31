@@ -1,0 +1,62 @@
+:root {
+  --metal-bg: #f3f5f7;
+  --metal-surface: #ffffff;
+  --metal-ink: #14213d;
+  --metal-accent: #fca311;
+  --metal-muted: #6c757d;
+  --metal-border: rgba(20, 33, 61, 0.12);
+}
+
+body.app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(252, 163, 17, 0.18), transparent 30%),
+    linear-gradient(180deg, #f8f9fa 0%, var(--metal-bg) 100%);
+  color: var(--metal-ink);
+}
+
+.tracking-wide {
+  letter-spacing: 0.12em;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, rgba(20, 33, 61, 0.98), rgba(38, 70, 83, 0.92));
+  border-radius: 1.5rem;
+  color: #fff;
+  box-shadow: 0 1rem 2rem rgba(20, 33, 61, 0.18);
+}
+
+.hero-card .lead,
+.hero-card .badge,
+.hero-card .btn-outline-secondary {
+  color: inherit;
+}
+
+.stats-panel {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.stat-item {
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.4rem;
+  margin-top: 0.2rem;
+}
+
+.card {
+  border: 1px solid var(--metal-border);
+  border-radius: 1rem;
+}

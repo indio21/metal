@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo Proyecto | Metal MVP{% endblock %}
+
+{% block content %}
+<section class="row justify-content-center">
+  <div class="col-xl-8">
+    <div class="card shadow-sm">
+      <div class="card-body p-4 p-lg-5">
+        <span class="badge text-bg-warning-subtle border mb-3">Placeholder Fase 1</span>
+        <h1 class="h3 mb-3">Crear proyecto</h1>
+        <p class="text-secondary mb-4">
+          Esta pantalla deja preparado el flujo base de alta. En Fase 2 vamos a conectar el formulario
+          con persistencia real y con la carga de archivos STEP/IGES.
+        </p>
+
+        <form class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label" for="name">Nombre del proyecto</label>
+            <input class="form-control" id="name" type="text" placeholder="Ej. Soporte eje linea A" disabled>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="part_number">Codigo de pieza</label>
+            <input class="form-control" id="part_number" type="text" placeholder="Ej. SOP-001" disabled>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="material">Material</label>
+            <input class="form-control" id="material" type="text" placeholder="Ej. Acero SAE 1010" disabled>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="cad_file">Archivo CAD</label>
+            <input class="form-control" id="cad_file" type="file" disabled>
+          </div>
+          <div class="col-12">
+            <label class="form-label" for="notes">Notas</label>
+            <textarea class="form-control" id="notes" rows="4" placeholder="Informacion adicional" disabled></textarea>
+          </div>
+          <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+            <button class="btn btn-primary" type="button" disabled>Guardar proyecto</button>
+            <a class="btn btn-outline-secondary" href="{{ url_for('main.dashboard') }}">Volver al dashboard</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

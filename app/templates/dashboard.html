@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Metal MVP{% endblock %}
+
+{% block content %}
+<section class="hero-card p-4 p-lg-5 mb-4">
+  <div class="row align-items-center g-4">
+    <div class="col-lg-8">
+      <span class="badge text-bg-light border mb-3">Fase 1 activa</span>
+      <h1 class="display-6 fw-semibold mb-3">Base lista para el flujo metalurgico del MVP</h1>
+      <p class="lead text-secondary mb-4">
+        Esta primera entrega deja preparada la app Flask, la base SQLite, las rutas iniciales
+        y la UI minima sobre la que vamos a construir la carga STEP/IGES en la siguiente fase.
+      </p>
+      <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Crear proyecto</a>
+        <span class="btn btn-outline-secondary disabled">Carga CAD disponible en Fase 2</span>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="stats-panel">
+        <div class="stat-item">
+          <span class="stat-label">Proyectos registrados</span>
+          <strong class="stat-value">{{ project_count }}</strong>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Base de datos</span>
+          <strong class="stat-value">SQLite</strong>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Estado</span>
+          <strong class="stat-value">Operativo</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="row g-4">
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Resumen inicial</h2>
+        <p class="text-secondary">
+          La aplicacion usa app factory, Blueprints, SQLAlchemy y configuracion por entorno.
+          El foco de esta fase fue dejar una base estable sin implementar todavia carga de archivos CAD,
+          TechDraw, exportacion ni IA.
+        </p>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item px-0">Estructura modular lista para crecer</li>
+          <li class="list-group-item px-0">Rutas minimas: dashboard y nuevo proyecto</li>
+          <li class="list-group-item px-0">Persistencia preparada con tabla "projects"</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Proyectos recientes</h2>
+        {% if recent_projects %}
+          <div class="list-group list-group-flush">
+            {% for project in recent_projects %}
+              <div class="list-group-item px-0">
+                <strong>{{ project.name }}</strong>
+                <div class="small text-secondary">
+                  {{ project.part_number or "Sin codigo" }} - {{ project.status }}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no hay proyectos cargados. La pantalla de alta queda lista como placeholder para la siguiente iteracion.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

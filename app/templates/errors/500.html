@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Error Interno | Metal MVP{% endblock %}
+
+{% block content %}
+<section class="error-shell">
+  <div class="error-code">500</div>
+  <h1 class="h3 mb-3">Ocurrio un problema interno</h1>
+  <p class="text-secondary mb-4">
+    La aplicacion encontro un error inesperado. El estado de la base se revirtio automaticamente para evitar inconsistencias.
+  </p>
+  <div class="d-flex flex-wrap justify-content-center gap-2">
+    <a class="btn btn-dark" href="{{ url_for('main.dashboard') }}">Volver al dashboard</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Ir al listado</a>
+  </div>
+</section>
+{% endblock %}

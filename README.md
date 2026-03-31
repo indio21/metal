@@ -1,17 +1,17 @@
 # Metal MVP
 
-Base inicial para un MVP web orientado a metalurgica. Esta Fase 2 extiende la app Flask existente con persistencia real de proyectos, relaciones base del dominio y vistas operativas para alta, listado y detalle.
+Base para un MVP web orientado a metalurgica. Esta Fase 3 extiende la app Flask existente con una capa web de gestion mas completa para piezas y proyectos, lista para anexar uploads CAD en la siguiente iteracion.
 
 ## Alcance actual
 
 - App Flask funcional con patron app factory
 - Configuracion por entorno (`development`, `testing`, `production`)
 - Persistencia real con SQLAlchemy y SQLite
-- Dashboard inicial con acceso al flujo de proyectos
-- Alta real de proyectos
-- Listado de proyectos guardados
-- Detalle simple de proyecto
-- Modelos base del MVP preparados para fases futuras
+- Dashboard con metricas utiles
+- CRUD web basico de proyectos/piezas
+- Alta, listado, detalle, edicion y borrado controlado
+- Manejo amigable de errores 404 y 500
+- Templates base opcionales listos para seleccion
 
 ## Modelos disponibles
 
@@ -20,6 +20,17 @@ Base inicial para un MVP web orientado a metalurgica. Esta Fase 2 extiende la ap
 - `DrawingJob`
 - `ExportFile`
 - `Template`
+
+## Datos de gestion disponibles en Project
+
+- nombre de pieza
+- codigo de pieza
+- revision
+- observaciones
+- material opcional
+- autor opcional
+- template seleccionado opcional
+- estado
 
 ## Estructura del proyecto
 
@@ -44,11 +55,6 @@ README.md
 CHANGELOG.md
 NEXT_STEPS.md
 ```
-
-## Requisitos
-
-- Python 3.11
-- Entorno virtual local
 
 ## Puesta en marcha
 
@@ -94,23 +100,20 @@ DATABASE_URL=sqlite:///metal.db
 pytest
 ```
 
-## Estado de la base
+## Estado funcional de la Fase 3
 
-- La aplicacion crea las tablas faltantes automaticamente al iniciar.
-- Si existe una base previa de Fase 1, `init_db.py` sincroniza el esquema minimo necesario para seguir trabajando.
-- Se deja seed inicial de template industrial basico para futuras fases de drawing.
-
-## Estado funcional de la Fase 2
-
-- Ya podes crear proyectos reales y guardarlos en SQLite.
-- Ya podes listar proyectos y entrar a su detalle.
+- Ya podes crear, editar, listar, consultar y eliminar proyectos.
+- El dashboard muestra metricas utiles para el seguimiento del flujo.
+- La ficha de pieza ya maneja revision, autor y template base opcional.
+- Las pantallas de error son amigables y la navegacion es consistente.
 - Todavia no hay carga real de archivos STEP/IGES.
-- Todavia no hay integracion con FreeCAD, drawing generation, exportacion ni Ollama.
+- Todavia no hay integracion con FreeCAD, drawing, exportacion ni Ollama.
 
 ## Como retomar si se interrumpe
 
 1. Revisar `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
 2. Activar `.venv`.
 3. Ejecutar `python init_db.py` para asegurar la base.
-4. Validar arranque con `python run.py`.
-5. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.
+4. Validar con `pytest`.
+5. Levantar la app con `python run.py`.
+6. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.

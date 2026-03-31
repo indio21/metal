@@ -3,17 +3,17 @@
 {% block title %}{{ project.name }} | Metal MVP{% endblock %}
 
 {% block content %}
-<section class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+<section class="page-header mb-4">
   <div>
-    <span class="badge text-bg-light border mb-3">Detalle de proyecto</span>
-    <h1 class="h3 mb-2">{{ project.name }}</h1>
+    <span class="section-kicker">Ficha de pieza</span>
+    <h1 class="h3 mt-2 mb-2">{{ project.name }}</h1>
     <p class="text-secondary mb-0">
-      Vista simple de seguimiento para la pieza individual. Las etapas CAD, drawing y exportacion se conectaran en fases posteriores.
+      Vista administrativa de la pieza individual. Desde aca podes revisar y ajustar la informacion base antes de anexar CAD.
     </p>
   </div>
-  <div class="d-flex flex-wrap gap-2">
+  <div class="page-header-actions">
     <a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Volver al listado</a>
-    <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Nuevo proyecto</a>
+    <a class="btn btn-dark" href="{{ url_for('projects.edit', project_id=project.id) }}">Editar</a>
   </div>
 </section>
 
@@ -21,31 +21,42 @@
   <div class="col-lg-8">
     <div class="card shadow-sm h-100">
       <div class="card-body">
-        <h2 class="h5 mb-3">Datos base</h2>
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+          <div>
+            <span class="section-kicker">Datos base</span>
+            <h2 class="h5 mt-2 mb-0">Informacion general</h2>
+          </div>
+          <span class="badge rounded-pill {{ project.status_badge_class }}">{{ project.status_label }}</span>
+        </div>
         <dl class="row mb-0 project-meta">
           <dt class="col-sm-4">Codigo de pieza</dt>
           <dd class="col-sm-8">{{ project.part_number or "Sin codigo asignado" }}</dd>
+          <dt class="col-sm-4">Revision</dt>
+          <dd class="col-sm-8">{{ project.revision }}</dd>
+          <dt class="col-sm-4">Autor</dt>
+          <dd class="col-sm-8">{{ project.author or "Sin autor" }}</dd>
           <dt class="col-sm-4">Material</dt>
           <dd class="col-sm-8">{{ project.material or "No definido" }}</dd>
-          <dt class="col-sm-4">Estado</dt>
-          <dd class="col-sm-8"><span class="badge rounded-pill text-bg-secondary">{{ project.status }}</span></dd>
+          <dt class="col-sm-4">Template</dt>
+          <dd class="col-sm-8">{{ project.template.name if project.template else "Sin template seleccionado" }}</dd>
           <dt class="col-sm-4">Creado</dt>
           <dd class="col-sm-8">{{ project.created_at.strftime("%Y-%m-%d %H:%M") }}</dd>
           <dt class="col-sm-4">Actualizado</dt>
           <dd class="col-sm-8">{{ project.updated_at.strftime("%Y-%m-%d %H:%M") }}</dd>
-          <dt class="col-sm-4">Notas</dt>
-          <dd class="col-sm-8">{{ project.notes or "Sin notas cargadas." }}</dd>
+          <dt class="col-sm-4">Observaciones</dt>
+          <dd class="col-sm-8">{{ project.notes or "Sin observaciones cargadas." }}</dd>
         </dl>
       </div>
     </div>
   </div>
   <div class="col-lg-4">
-    <div class="card shadow-sm h-100">
+    <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <h2 class="h5 mb-3">Estado del flujo MVP</h2>
+        <span class="section-kicker">Preparacion del MVP</span>
+        <h2 class="h5 mt-2 mb-3">Estado del flujo</h2>
         <div class="stack-panel">
           <div class="stack-item">
-            <span class="stack-label">Modelos cargados</span>
+            <span class="stack-label">Modelos CAD anexados</span>
             <strong class="stack-value">{{ project.uploaded_models|length }}</strong>
           </div>
           <div class="stack-item">
@@ -53,13 +64,27 @@
             <strong class="stack-value">{{ project.drawing_jobs|length }}</strong>
           </div>
           <div class="stack-item">
-            <span class="stack-label">Exports generados</span>
+            <span class="stack-label">Archivos exportados</span>
             <strong class="stack-value">{{ project.export_files|length }}</strong>
           </div>
         </div>
         <p class="small text-secondary mt-3 mb-0">
-          En esta fase solo queda implementada la persistencia. Los contadores se activaran a medida que avancemos con CAD y exportacion.
+          Estos contadores quedan listos para activarse cuando agreguemos uploads y generacion de drawing.
         </p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <span class="section-kicker">Acciones</span>
+        <h2 class="h5 mt-2 mb-3">Gestion rapida</h2>
+        <div class="d-grid gap-2">
+          <a class="btn btn-dark" href="{{ url_for('projects.edit', project_id=project.id) }}">Editar datos</a>
+          <a class="btn btn-outline-secondary" href="{{ url_for('projects.new_project') }}">Nueva pieza</a>
+          <form method="post" action="{{ url_for('projects.delete', project_id=project.id) }}" onsubmit="return confirm('Se eliminara la pieza. Deseas continuar?');">
+            <button class="btn btn-outline-danger w-100" type="submit">Eliminar proyecto</button>
+          </form>
+        </div>
       </div>
     </div>
   </div>

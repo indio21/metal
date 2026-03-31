@@ -12,6 +12,7 @@ class Template(TimestampMixin, db.Model):
     is_default = db.Column(db.Boolean, nullable=False, default=False)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
+    projects = db.relationship("Project", back_populates="template", lazy="selectin")
     drawing_jobs = db.relationship("DrawingJob", back_populates="template", lazy="selectin")
 
     def __repr__(self) -> str:

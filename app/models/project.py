@@ -8,10 +8,14 @@ class Project(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     part_number = db.Column(db.String(80), nullable=True)
+    revision = db.Column(db.String(32), nullable=False, default="A")
     material = db.Column(db.String(80), nullable=True)
+    author = db.Column(db.String(120), nullable=True)
+    template_id = db.Column(db.Integer, db.ForeignKey("templates.id"), nullable=True, index=True)
     notes = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(32), nullable=False, default="draft")
 
+    template = db.relationship("Template", back_populates="projects")
     uploaded_models = db.relationship(
         "UploadedModel",
         back_populates="project",
@@ -30,6 +34,20 @@ class Project(TimestampMixin, db.Model):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+
+    STATUS_META = {
+        "draft": {"label": "Borrador", "badge": "text-bg-warning"},
+        "pending_upload": {"label": "Pendiente de modelo", "badge": "text-bg-secondary"},
+        "ready": {"label": "Listo para analisis", "badge": "text-bg-success"},
+    }
+
+    @property
+    def status_label(self) -> str:
+        return self.STATUS_META.get(self.status, {}).get("label", self.status)
+
+    @property
+    def status_badge_class(self) -> str:
+        return self.STATUS_META.get(self.status, {}).get("badge", "text-bg-secondary")
 
     def __repr__(self) -> str:
         return f"<Project {self.name}>"

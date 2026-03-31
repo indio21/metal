@@ -1,0 +1,116 @@
+<form class="row g-3" method="post" novalidate>
+  <div class="col-md-6">
+    <label class="form-label" for="name">Nombre de pieza</label>
+    <input
+      class="form-control{% if errors.get('name') %} is-invalid{% endif %}"
+      id="name"
+      name="name"
+      type="text"
+      placeholder="Ej. Soporte eje linea A"
+      value="{{ form_data.name }}"
+      required
+    >
+    {% if errors.get('name') %}
+      <div class="invalid-feedback">{{ errors.get("name") }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-3">
+    <label class="form-label" for="part_number">Codigo de pieza</label>
+    <input
+      class="form-control"
+      id="part_number"
+      name="part_number"
+      type="text"
+      placeholder="Ej. SOP-001"
+      value="{{ form_data.part_number }}"
+    >
+  </div>
+  <div class="col-md-3">
+    <label class="form-label" for="revision">Revision</label>
+    <input
+      class="form-control{% if errors.get('revision') %} is-invalid{% endif %}"
+      id="revision"
+      name="revision"
+      type="text"
+      placeholder="A"
+      value="{{ form_data.revision }}"
+      required
+    >
+    {% if errors.get('revision') %}
+      <div class="invalid-feedback">{{ errors.get("revision") }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-4">
+    <label class="form-label" for="material">Material</label>
+    <input
+      class="form-control"
+      id="material"
+      name="material"
+      type="text"
+      placeholder="Ej. Acero SAE 1010"
+      value="{{ form_data.material }}"
+    >
+  </div>
+  <div class="col-md-4">
+    <label class="form-label" for="author">Autor</label>
+    <input
+      class="form-control"
+      id="author"
+      name="author"
+      type="text"
+      placeholder="Ej. Pablo Solari"
+      value="{{ form_data.author }}"
+    >
+  </div>
+  <div class="col-md-4">
+    <label class="form-label" for="status">Estado</label>
+    <select
+      class="form-select{% if errors.get('status') %} is-invalid{% endif %}"
+      id="status"
+      name="status"
+    >
+      {% for value, label in status_options %}
+        <option value="{{ value }}" {% if form_data.status == value %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    {% if errors.get('status') %}
+      <div class="invalid-feedback">{{ errors.get("status") }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="template_id">Template base</label>
+    <select
+      class="form-select{% if errors.get('template_id') %} is-invalid{% endif %}"
+      id="template_id"
+      name="template_id"
+    >
+      <option value="">Sin template por ahora</option>
+      {% for template in template_options %}
+        <option value="{{ template.id }}" {% if form_data.template_id == template.id|string %}selected{% endif %}>
+          {{ template.name }}
+        </option>
+      {% endfor %}
+    </select>
+    {% if errors.get('template_id') %}
+      <div class="invalid-feedback">{{ errors.get("template_id") }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="notes">Observaciones</label>
+    <textarea
+      class="form-control"
+      id="notes"
+      name="notes"
+      rows="4"
+      placeholder="Notas tecnicas, alcance o contexto de fabricacion"
+    >{{ form_data.notes }}</textarea>
+  </div>
+  <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+    <button class="btn btn-primary" type="submit">
+      {% if page_mode == "edit" %}Guardar cambios{% else %}Guardar pieza{% endif %}
+    </button>
+    <a class="btn btn-outline-secondary" href="{% if page_mode == 'edit' %}{{ url_for('projects.detail', project_id=project.id) }}{% else %}{{ url_for('main.dashboard') }}{% endif %}">
+      Cancelar
+    </a>
+  </div>
+</form>

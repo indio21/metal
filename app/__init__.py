@@ -1,6 +1,7 @@
 from flask import Flask
 
 from app.extensions import db
+from app.routes.errors import register_error_handlers
 from app.services.database import initialize_database, register_database_commands
 from config import config_by_name
 
@@ -12,6 +13,7 @@ def create_app(config_name: str | None = None) -> Flask:
 
     initialize_extensions(app)
     register_blueprints(app)
+    register_error_handlers(app)
     register_database_commands(app)
     ensure_directories(app)
 

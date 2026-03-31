@@ -2,11 +2,11 @@
 
 ## Estado actual
 
-La Fase 2 quedo completa con persistencia real de proyectos, modelos base del dominio, listado, alta y detalle funcionando sobre SQLite.
+La Fase 3 quedo completa con una capa web de gestion mas seria para proyectos y piezas, incluyendo CRUD basico usable, dashboard mejorado y errores amigables.
 
 ## Siguiente fase exacta
 
-Continuar con la Fase 3 enfocandose en:
+Continuar con la Fase 4 enfocandose en:
 
 - carga controlada de archivos `STEP`, `STP`, `IGES` e `IGS`
 - validaciones de extension, nombre y tamano
@@ -28,5 +28,6 @@ Continuar con la Fase 3 enfocandose en:
 2. Leer `README.md`, `CHANGELOG.md` y este archivo.
 3. Activar `.venv`.
 4. Ejecutar `python init_db.py`.
-5. Validar arranque con `python run.py`.
-6. Continuar solo con la proxima fase pendiente sin rehacer la base existente.
+5. Validar con `pytest`.
+6. Levantar la app con `python run.py`.
+7. Continuar solo con la proxima fase pendiente sin rehacer la base existente.

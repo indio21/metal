@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Nueva Pieza | Metal MVP{% endblock %}
+{% block title %}Editar {{ project.name }} | Metal MVP{% endblock %}
 
 {% block content %}
 <section class="row justify-content-center">
@@ -9,14 +9,14 @@
       <div class="card-body p-4 p-lg-5">
         <div class="page-header mb-4">
           <div>
-            <span class="section-kicker">Alta de proyecto</span>
-            <h1 class="h3 mt-2 mb-2">Nueva pieza</h1>
+            <span class="section-kicker">Edicion basica</span>
+            <h1 class="h3 mt-2 mb-2">Editar pieza</h1>
             <p class="text-secondary mb-0">
-              Registra la pieza y deja su ficha administrativa lista antes de anexar el modelo CAD.
+              Actualiza datos de gestion, revision, autor o template base sin afectar futuras integraciones CAD.
             </p>
           </div>
           <div class="page-header-actions">
-            <a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Volver al listado</a>
+            <a class="btn btn-outline-secondary" href="{{ url_for('projects.detail', project_id=project.id) }}">Volver al detalle</a>
           </div>
         </div>
 

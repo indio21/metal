@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}No Encontrado | Metal MVP{% endblock %}
+
+{% block content %}
+<section class="error-shell">
+  <div class="error-code">404</div>
+  <h1 class="h3 mb-3">No encontramos lo que buscabas</h1>
+  <p class="text-secondary mb-4">
+    Puede que el proyecto ya no exista o que la URL no sea valida. Volve al dashboard o revisa el listado de piezas.
+  </p>
+  <div class="d-flex flex-wrap justify-content-center gap-2">
+    <a class="btn btn-dark" href="{{ url_for('main.dashboard') }}">Ir al dashboard</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('projects.index') }}">Ver proyectos</a>
+  </div>
+</section>
+{% endblock %}

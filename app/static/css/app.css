@@ -15,6 +15,10 @@ body.app-shell {
   color: var(--metal-ink);
 }
 
+.app-navbar {
+  backdrop-filter: blur(8px);
+}
+
 .tracking-wide {
   letter-spacing: 0.12em;
 }
@@ -59,11 +63,39 @@ body.app-shell {
 .card {
   border: 1px solid var(--metal-border);
   border-radius: 1rem;
+  box-shadow: 0 1rem 2rem rgba(20, 33, 61, 0.05);
+}
+
+.section-kicker {
+  display: inline-block;
+  color: var(--metal-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .table > :not(caption) > * > * {
   padding-top: 1rem;
   padding-bottom: 1rem;
+}
+
+.project-table td,
+.project-table th {
+  vertical-align: middle;
 }
 
 .project-meta dt {
@@ -96,4 +128,49 @@ body.app-shell {
   display: block;
   font-size: 1.35rem;
   margin-top: 0.15rem;
+}
+
+.metric-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid var(--metal-border);
+  border-radius: 0.9rem;
+  background: rgba(20, 33, 61, 0.03);
+}
+
+.empty-panel {
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.error-shell {
+  max-width: 42rem;
+  margin: 4rem auto;
+  text-align: center;
+  padding: 3rem 2rem;
+  background: var(--metal-surface);
+  border: 1px solid var(--metal-border);
+  border-radius: 1.5rem;
+  box-shadow: 0 1rem 2rem rgba(20, 33, 61, 0.08);
+}
+
+.error-code {
+  font-size: clamp(3rem, 10vw, 5rem);
+  font-weight: 800;
+  line-height: 1;
+  color: var(--metal-accent);
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 767.98px) {
+  .page-header {
+    flex-direction: column;
+  }
 }

@@ -2,18 +2,36 @@
 
 ## Estado actual
 
-El MVP base quedo navegable y retomable:
+Las Fases 2 y 3 de la version 2.0 ya quedaron cubiertas sobre el proyecto existente:
 
-- gestion de proyectos/piezas
-- carga STEP/IGES
-- analisis CAD base con fallback controlado
-- analisis CAD con identificacion visible entre FreeCAD real y modo demo de la app
-- drawing preliminar 2D
-- preview SVG
-- exportacion PDF/DXF
-- asistencia opcional con Ollama o ayuda local
+- persistencia real para proyecto y pieza
+- formulario de alta y edicion ampliado
+- listado y detalle simple de proyecto
+- carga segura de STEP/IGES
+- registro del modelo en base de datos
+- preferencia visible por STEP frente a IGES
 
-## Como continuar sin perder contexto
+## Siguiente fase exacta
+
+Continuar con la fase siguiente de la version 2.0 enfocandose en:
+
+- clasificacion basica de pieza axial o torneada
+- deteccion de si el modelo pertenece a familia de revolucion
+- preparacion de la estrategia de drawing especializada
+- definicion de las tres vistas objetivo:
+  - lateral principal
+  - vista de extremo
+  - corte longitudinal
+
+## Restricciones a respetar
+
+- no rehacer el proyecto desde cero
+- no borrar trabajo correcto salvo necesidad justificada
+- mantener el proyecto ejecutable al final de cada fase
+- no prometer todavia el drawing final del cliente
+- seguir priorizando piezas individuales
+
+## Como retomar si se interrumpe
 
 1. Inspeccionar primero la estructura actual del repositorio.
 2. Leer `README.md`, `CHANGELOG.md` y este archivo.
@@ -22,23 +40,4 @@ El MVP base quedo navegable y retomable:
 5. Ejecutar `python init_db.py`.
 6. Validar con `pytest`.
 7. Levantar la app con `python run.py`.
-8. Recién después avanzar con una mejora puntual, sin rehacer la base.
-
-## Mejoras sugeridas despues del MVP
-
-- integrar FreeCAD/TechDraw real con mayor profundidad cuando el entorno lo permita
-- mejorar templates de plano y cajetin editable
-- agregar cotas principales mas robustas
-- separar preview web, archivo intermedio y salida final
-- agregar cola simple de jobs para analisis y exportacion
-- versionar mejor los drawings por revision
-- mejorar permisos, auditoria y trazabilidad si el uso crece
-- ampliar la asistencia IA con prompts mas contextualizados sin volverla obligatoria
-
-## Limites a respetar en futuras iteraciones
-
-- mantener foco en piezas individuales hasta decidir una fase dedicada a ensamblajes
-- no prometer acotado universal
-- no volver obligatorias ni FreeCAD ni Ollama
-- no introducir dependencias pagas obligatorias
-- mantener el proyecto ejecutable al final de cada fase
+8. Continuar solo con la siguiente fase pendiente de la version 2.0.

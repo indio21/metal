@@ -61,6 +61,7 @@ def handle_model_upload(
         storage_path=str(destination.relative_to(upload_root)),
         status="uploaded",
     )
+    project.status = "ready"
     db.session.add(uploaded_model)
     db.session.commit()
     return uploaded_model

@@ -22,3 +22,11 @@ class UploadedModel(TimestampMixin, db.Model):
 
     def __repr__(self) -> str:
         return f"<UploadedModel {self.original_filename or 'pending'}>"
+
+    @property
+    def file_type(self) -> str | None:
+        return self.file_format
+
+    @property
+    def uploaded_at(self):
+        return self.created_at

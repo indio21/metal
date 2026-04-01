@@ -57,10 +57,14 @@ def build_project_form_data(
     source = source or {}
     if project is not None and not source:
         return {
+            "project_name": project.project_name or "",
+            "part_name": project.part_name or project.name,
+            "description": project.description or "",
             "name": project.name,
             "part_number": project.part_number or "",
             "revision": project.revision or "A",
             "material": project.material or "",
+            "finish": project.finish or "",
             "author": project.author or "",
             "template_id": str(project.template_id or ""),
             "status": project.status,
@@ -68,10 +72,14 @@ def build_project_form_data(
         }
 
     return {
-        "name": _clean_text(source.get("name")),
+        "project_name": _clean_text(source.get("project_name")),
+        "part_name": _clean_text(source.get("part_name")) or _clean_text(source.get("name")),
+        "description": _clean_text(source.get("description")),
+        "name": _clean_text(source.get("name")) or _clean_text(source.get("part_name")),
         "part_number": _clean_text(source.get("part_number")),
         "revision": _clean_text(source.get("revision")) or "A",
         "material": _clean_text(source.get("material")),
+        "finish": _clean_text(source.get("finish")),
         "author": _clean_text(source.get("author")),
         "template_id": _clean_text(source.get("template_id")),
         "status": source.get("status", "draft").strip() or "draft",
@@ -87,8 +95,11 @@ def validate_project_form(
     valid_statuses = {value for value, _label in PROJECT_STATUS_OPTIONS}
     valid_template_ids = {str(template.id) for template in templates}
 
-    if not form_data["name"]:
-        errors["name"] = "El nombre de pieza es obligatorio."
+    if not form_data["project_name"]:
+        errors["project_name"] = "El nombre de proyecto es obligatorio."
+
+    if not form_data["part_name"]:
+        errors["part_name"] = "El nombre de pieza es obligatorio."
 
     if not form_data["revision"]:
         errors["revision"] = "La revision es obligatoria."
@@ -104,10 +115,14 @@ def validate_project_form(
 
 def create_project(form_data: dict[str, str]) -> Project:
     project = Project(
-        name=form_data["name"],
+        name=form_data["part_name"] or form_data["name"],
+        project_name=form_data["project_name"] or None,
+        part_name=form_data["part_name"] or form_data["name"] or None,
+        description=form_data["description"] or None,
         part_number=form_data["part_number"] or None,
         revision=form_data["revision"] or "A",
         material=form_data["material"] or None,
+        finish=form_data["finish"] or None,
         author=form_data["author"] or None,
         template_id=int(form_data["template_id"]) if form_data["template_id"] else None,
         status=form_data["status"],
@@ -119,10 +134,14 @@ def create_project(form_data: dict[str, str]) -> Project:
 
 
 def update_project(project: Project, form_data: dict[str, str]) -> Project:
-    project.name = form_data["name"]
+    project.name = form_data["part_name"] or form_data["name"]
+    project.project_name = form_data["project_name"] or None
+    project.part_name = form_data["part_name"] or form_data["name"] or None
+    project.description = form_data["description"] or None
     project.part_number = form_data["part_number"] or None
     project.revision = form_data["revision"] or "A"
     project.material = form_data["material"] or None
+    project.finish = form_data["finish"] or None
     project.author = form_data["author"] or None
     project.template_id = int(form_data["template_id"]) if form_data["template_id"] else None
     project.status = form_data["status"]

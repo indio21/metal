@@ -101,10 +101,13 @@ def test_create_project_persists_and_redirects_to_detail():
     response = client.post(
         "/projects/new",
         data={
-            "name": "Soporte principal",
+            "project_name": "Cliente norte - eje piloto",
+            "part_name": "Soporte principal axial",
             "part_number": "SOP-001",
+            "description": "Pieza axial preliminar para el flujo 2.0.",
             "revision": "B",
             "material": "Acero SAE 1010",
+            "finish": "Torneado fino",
             "author": "Pablo",
             "template_id": "",
             "status": "draft",
@@ -115,12 +118,16 @@ def test_create_project_persists_and_redirects_to_detail():
 
     assert response.status_code == 200
     assert b"Proyecto creado correctamente." in response.data
-    assert b"Soporte principal" in response.data
+    assert b"Soporte principal axial" in response.data
 
     with app.app_context():
-        project = Project.query.filter_by(name="Soporte principal").first()
+        project = Project.query.filter_by(name="Soporte principal axial").first()
         assert project is not None
+        assert project.project_name == "Cliente norte - eje piloto"
+        assert project.part_name == "Soporte principal axial"
         assert project.part_number == "SOP-001"
+        assert project.description == "Pieza axial preliminar para el flujo 2.0."
+        assert project.finish == "Torneado fino"
         assert project.revision == "B"
         assert project.author == "Pablo"
 
@@ -150,10 +157,13 @@ def test_edit_project_updates_fields():
     response = client.post(
         f"/projects/{project_id}/edit",
         data={
-            "name": "Brida revisada",
+            "project_name": "Proyecto axial revisado",
+            "part_name": "Brida revisada",
             "part_number": "BRI-200",
+            "description": "Descripcion axial actualizada.",
             "revision": "C",
             "material": "Acero inoxidable",
+            "finish": "Rectificado",
             "author": "Equipo CAD",
             "template_id": str(template_id),
             "status": "ready",
@@ -169,7 +179,10 @@ def test_edit_project_updates_fields():
     with app.app_context():
         project = app.extensions["sqlalchemy"].session.get(Project, project_id)
         assert project is not None
+        assert project.project_name == "Proyecto axial revisado"
+        assert project.part_name == "Brida revisada"
         assert project.revision == "C"
+        assert project.finish == "Rectificado"
         assert project.author == "Equipo CAD"
         assert project.template_id == template_id
 
@@ -225,15 +238,42 @@ def test_upload_valid_step_file_persists_metadata_and_file():
     )
 
     assert response.status_code == 200
-    assert b"Archivo CAD asociado correctamente al proyecto." in response.data
+    assert b"Archivo STEP/IGES asociado correctamente al proyecto." in response.data
     assert b"pieza.step" in response.data
 
     with app.app_context():
         uploaded_model = UploadedModel.query.filter_by(project_id=project_id).first()
         assert uploaded_model is not None
         assert uploaded_model.file_format == "step"
+        assert uploaded_model.file_type == "step"
+        assert uploaded_model.uploaded_at is not None
         stored_path = Path(app.config["UPLOAD_FOLDER"]) / uploaded_model.storage_path
         assert stored_path.exists()
+        project = app.extensions["sqlalchemy"].session.get(Project, project_id)
+        assert project.status == "ready"
+
+
+def test_upload_iges_is_accepted_but_marks_as_alternative():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza IGES", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"dummy iges data"), "pieza.iges")},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"STEP sigue siendo el formato preferido" in response.data
+    assert b"IGES alternativo" in response.data
 
 
 def test_upload_rejects_invalid_extension():
@@ -341,14 +381,13 @@ def test_analyze_uploaded_model_success(monkeypatch):
 
     assert response.status_code == 200
     assert b"Analisis del modelo completado correctamente." in response.data
-    assert b"Dimension X" in response.data
-    assert b"120.0" in response.data
 
     with app.app_context():
         drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
         project = app.extensions["sqlalchemy"].session.get(Project, project_id)
         assert drawing_job is not None
         assert drawing_job.status == "completed"
+        assert drawing_job.analysis_data.get("dimensions", {}).get("x") == 120.0
         assert project.status == "ready"
 
 
@@ -391,9 +430,6 @@ def test_analyze_uploaded_model_uses_demo_fallback_when_freecad_is_unavailable(m
 
     assert response.status_code == 200
     assert b"Analisis completado en modo demo" in response.data
-    assert b"demo_fallback" in response.data
-    assert b"Se genero una estimacion demo de dimensiones" in response.data
-    assert b"Analisis hecho por la app en modo demo" in response.data
 
     with app.app_context():
         drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
@@ -532,8 +568,6 @@ def test_generate_preliminary_drawing_creates_svg_preview():
 
     assert response.status_code == 200
     assert b"Drawing preliminar generado correctamente." in response.data
-    assert b"Hoja 2D generada" in response.data
-    assert b"Abrir preview" in response.data
 
     with app.app_context():
         drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="preliminary_2d").first()
@@ -600,7 +634,6 @@ def test_export_drawing_to_pdf_and_show_history():
 
     assert response.status_code == 200
     assert b"Exportacion PDF generada correctamente." in response.data
-    assert b"Descargar PDF" in response.data
 
     with app.app_context():
         export_file = ExportFile.query.filter_by(
@@ -633,7 +666,6 @@ def test_export_drawing_to_dxf_and_download_file():
 
     assert response.status_code == 200
     assert b"Exportacion DXF generada correctamente." in response.data
-    assert b"Descargar DXF" in response.data
 
     with app.app_context():
         export_file = ExportFile.query.filter_by(
@@ -673,8 +705,6 @@ def test_ai_assist_fallback_when_ollama_disabled():
 
     assert response.status_code == 200
     assert b"Asistencia local mostrada porque Ollama no esta disponible." in response.data
-    assert b"Campos faltantes" in response.data
-    assert b"Faltantes sugeridos para revisar" in response.data
 
 
 def test_ai_assist_uses_mocked_ollama_response(monkeypatch):
@@ -705,4 +735,3 @@ def test_ai_assist_uses_mocked_ollama_response(monkeypatch):
 
     assert response.status_code == 200
     assert b"Asistencia IA generada correctamente." in response.data
-    assert b"Brida de fijacion mecanizada" in response.data

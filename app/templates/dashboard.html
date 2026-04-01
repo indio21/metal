@@ -6,11 +6,11 @@
 <section class="hero-card p-4 p-lg-5 mb-4">
   <div class="row align-items-center g-4">
     <div class="col-lg-7">
-      <span class="badge text-bg-light border mb-3">Fase 8 - MVP navegable</span>
-      <h1 class="display-6 fw-semibold mb-3">Flujo base completo para piezas individuales</h1>
+      <span class="badge text-bg-light border mb-3">Version 2.0 - Fases 2 y 3</span>
+      <h1 class="display-6 fw-semibold mb-3">Persistencia y gestion de modelos para piezas axiales</h1>
       <p class="lead text-secondary mb-4">
-        El MVP ya cubre gestion de proyectos, carga STEP/IGES, analisis CAD base, drawing preliminar 2D,
-        preview SVG, exportacion PDF/DXF y asistencia opcional con Ollama sin volverla obligatoria.
+        La base ya permite registrar proyecto y pieza, guardar datos tecnicos minimos y asociar archivos STEP o IGES
+        de forma segura, manteniendo a STEP como formato principal para la version axial 2.0.
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Crear pieza</a>
@@ -45,7 +45,7 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <span class="section-kicker">Flujo</span>
-        <h2 class="h5 mt-2 mb-3">Estado de las piezas</h2>
+        <h2 class="h5 mt-2 mb-3">Estado del repositorio</h2>
         <div class="metric-list">
           <div class="metric-row">
             <span>Borradores</span>
@@ -70,10 +70,10 @@
   <div class="col-md-4">
     <div class="card shadow-sm h-100">
       <div class="card-body">
-        <span class="section-kicker">Cobertura</span>
-        <h2 class="h5 mt-2 mb-3">Base de datos</h2>
+        <span class="section-kicker">Version 2.0</span>
+        <h2 class="h5 mt-2 mb-3">Persistencia axial</h2>
         <p class="text-secondary mb-2">
-          La persistencia de proyectos ya esta estable y admite revision, autor y template base.
+          La ficha ya contempla proyecto, pieza, descripcion, material, terminacion, revision y gestion del modelo 3D asociado.
         </p>
         <p class="small text-secondary mb-0">
           Ultima actualizacion registrada:
@@ -85,12 +85,11 @@
   <div class="col-md-4">
     <div class="card shadow-sm h-100">
       <div class="card-body">
-        <span class="section-kicker">Infraestructura</span>
-        <h2 class="h5 mt-2 mb-3">Exportacion e IA opcional</h2>
+        <span class="section-kicker">Siguiente construccion</span>
+        <h2 class="h5 mt-2 mb-3">Siguiente foco</h2>
         <p class="text-secondary mb-3">
-          Exportaciones generadas: <strong>{{ generated_exports }}</strong><br>
-          Ollama: <strong>{{ "habilitado" if ollama_enabled else "opcional desactivado" }}</strong>
-          {% if ollama_enabled %}<br>Modelo activo: <strong>{{ ollama_model }}</strong>{% endif %}
+          El siguiente paso sera detectar y clasificar la familia axial para construir la estrategia de drawing con
+          vista lateral, vista de extremo y corte longitudinal.
         </p>
         <a class="btn btn-outline-dark btn-sm" href="{{ url_for('projects.index') }}">Ver proyectos activos</a>
       </div>
@@ -104,7 +103,7 @@
       <div>
         <span class="section-kicker">Actividad reciente</span>
         <h2 class="h5 mt-2 mb-1">Ultimos proyectos actualizados</h2>
-        <p class="text-secondary mb-0">Resumen rapido de las piezas para seguir trabajando sin perder contexto.</p>
+        <p class="text-secondary mb-0">Resumen rapido de proyectos y piezas ya cargados para continuar la version axial sin perder continuidad.</p>
       </div>
       <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('projects.index') }}">Ir al listado completo</a>
     </div>

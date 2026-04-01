@@ -46,6 +46,16 @@ def synchronize_legacy_schema() -> None:
             connection.execute(text("UPDATE projects SET revision = 'A' WHERE revision IS NULL"))
         if "author" not in project_columns:
             connection.execute(text("ALTER TABLE projects ADD COLUMN author VARCHAR(120)"))
+        if "project_name" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN project_name VARCHAR(160)"))
+            connection.execute(text("UPDATE projects SET project_name = name WHERE project_name IS NULL"))
+        if "part_name" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN part_name VARCHAR(160)"))
+            connection.execute(text("UPDATE projects SET part_name = name WHERE part_name IS NULL"))
+        if "description" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN description TEXT"))
+        if "finish" not in project_columns:
+            connection.execute(text("ALTER TABLE projects ADD COLUMN finish VARCHAR(120)"))
         if "template_id" not in project_columns:
             connection.execute(text("ALTER TABLE projects ADD COLUMN template_id INTEGER"))
         if "drawing_jobs" in table_names:

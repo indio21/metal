@@ -1,17 +1,32 @@
 <form class="row g-3" method="post" novalidate>
   <div class="col-md-6">
-    <label class="form-label" for="name">Nombre de pieza</label>
+    <label class="form-label" for="project_name">Nombre de proyecto</label>
     <input
-      class="form-control{% if errors.get('name') %} is-invalid{% endif %}"
-      id="name"
-      name="name"
+      class="form-control{% if errors.get('project_name') %} is-invalid{% endif %}"
+      id="project_name"
+      name="project_name"
       type="text"
-      placeholder="Ej. Soporte eje linea A"
-      value="{{ form_data.name }}"
+      placeholder="Ej. Eje cliente norte - lote piloto"
+      value="{{ form_data.project_name }}"
       required
     >
-    {% if errors.get('name') %}
-      <div class="invalid-feedback">{{ errors.get("name") }}</div>
+    {% if errors.get('project_name') %}
+      <div class="invalid-feedback">{{ errors.get("project_name") }}</div>
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <label class="form-label" for="part_name">Nombre de pieza</label>
+    <input
+      class="form-control{% if errors.get('part_name') %} is-invalid{% endif %}"
+      id="part_name"
+      name="part_name"
+      type="text"
+      placeholder="Ej. Arbol axial escalonado"
+      value="{{ form_data.part_name }}"
+      required
+    >
+    {% if errors.get('part_name') %}
+      <div class="invalid-feedback">{{ errors.get("part_name") }}</div>
     {% endif %}
   </div>
   <div class="col-md-3">
@@ -52,6 +67,17 @@
     >
   </div>
   <div class="col-md-4">
+    <label class="form-label" for="finish">Terminacion</label>
+    <input
+      class="form-control"
+      id="finish"
+      name="finish"
+      type="text"
+      placeholder="Ej. Torneado fino / pulido"
+      value="{{ form_data.finish }}"
+    >
+  </div>
+  <div class="col-md-4">
     <label class="form-label" for="author">Autor</label>
     <input
       class="form-control"
@@ -61,6 +87,16 @@
       placeholder="Ej. Pablo Solari"
       value="{{ form_data.author }}"
     >
+  </div>
+  <div class="col-12">
+    <label class="form-label" for="description">Descripcion</label>
+    <textarea
+      class="form-control"
+      id="description"
+      name="description"
+      rows="3"
+      placeholder="Descripcion breve de la pieza axial, su funcion o el alcance del trabajo"
+    >{{ form_data.description }}</textarea>
   </div>
   <div class="col-md-4">
     <label class="form-label" for="status">Estado</label>
@@ -96,7 +132,7 @@
     {% endif %}
   </div>
   <div class="col-md-6">
-    <label class="form-label" for="notes">Observaciones</label>
+    <label class="form-label" for="notes">Notas</label>
     <textarea
       class="form-control"
       id="notes"

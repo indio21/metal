@@ -5,10 +5,10 @@
 {% block content %}
 <section class="page-header mb-4">
   <div>
-    <span class="section-kicker">Gestion de piezas</span>
+    <span class="section-kicker">Gestion de piezas axiales</span>
     <h1 class="h3 mt-2 mb-2">Listado de proyectos</h1>
     <p class="text-secondary mb-0">
-      Administra la ficha de cada pieza antes de integrar uploads, drawing y exportaciones.
+      Administra piezas torneadas o de revolucion y deja su ficha base lista para la estrategia de drawing axial de la version 2.0.
     </p>
   </div>
   <div class="page-header-actions">
@@ -23,10 +23,11 @@
         <table class="table table-hover align-middle mb-0 project-table">
           <thead class="table-light">
             <tr>
-              <th class="ps-4">Pieza</th>
+              <th class="ps-4">Proyecto / pieza</th>
               <th>Revision</th>
               <th>Autor</th>
               <th>Material</th>
+              <th>Terminacion</th>
               <th>Template</th>
               <th>Estado</th>
               <th>Actualizado</th>
@@ -37,12 +38,14 @@
             {% for project in projects %}
               <tr>
                 <td class="ps-4">
-                  <div class="fw-semibold">{{ project.name }}</div>
+                  <div class="fw-semibold">{{ project.resolved_part_name }}</div>
+                  <div class="small text-secondary">{{ project.resolved_project_name }}</div>
                   <div class="small text-secondary">{{ project.part_number or "Sin codigo" }}</div>
                 </td>
                 <td>{{ project.revision }}</td>
                 <td>{{ project.author or "Sin autor" }}</td>
                 <td>{{ project.material or "No definido" }}</td>
+                <td>{{ project.finish or "No definida" }}</td>
                 <td>{{ project.template.name if project.template else "Sin template" }}</td>
                 <td><span class="badge rounded-pill {{ project.status_badge_class }}">{{ project.status_label }}</span></td>
                 <td>{{ project.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
@@ -61,7 +64,7 @@
       <div class="empty-panel">
         <h2 class="h5 mb-2">Todavia no hay piezas registradas</h2>
         <p class="text-secondary mb-4">
-          Crea el primer proyecto para dejar el flujo web listo antes de empezar con los uploads CAD.
+          Crea la primera pieza axial para dejar preparada la base administrativa antes del motor de drawing especializado.
         </p>
         <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Crear primera pieza</a>
       </div>

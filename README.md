@@ -1,19 +1,68 @@
-# Metal MVP
+# Metal MVP 2.0
 
-MVP web para metalurgica orientado a piezas individuales. El proyecto permite gestionar piezas, subir archivos STEP/IGES, ejecutar un analisis CAD base, generar un drawing preliminar 2D, visualizar un preview web, exportar PDF/DXF y usar asistencia opcional con Ollama sin volverla obligatoria.
+MVP web orientado a piezas torneadas, axiales o de revolucion. Esta iteracion trabaja de forma incremental sobre el repositorio existente y, en este punto, deja resueltas las Fases 2 y 3 de la version 2.0: persistencia para proyectos/piezas y gestion segura de archivos STEP/IGES.
 
-## Estado del MVP
+## Estado actual
 
-El flujo principal navegable ya esta implementado:
+El proyecto ya permite:
 
-1. Crear proyecto de pieza.
-2. Completar datos base.
-3. Subir un archivo `.step`, `.stp`, `.iges` o `.igs`.
-4. Analizar el modelo.
-5. Generar un drawing preliminar 2D.
-6. Ver preview SVG.
-7. Exportar a PDF y DXF.
-8. Usar ayuda opcional con Ollama o fallback local.
+1. Crear proyectos reales.
+2. Registrar datos base de una pieza axial.
+3. Guardar la informacion en SQLite.
+4. Listar proyectos.
+5. Ver un detalle simple de proyecto/pieza.
+6. Subir archivos `.step`, `.stp`, `.iges` o `.igs`.
+7. Guardar el archivo de forma segura en `/uploads`.
+8. Persistir la metadata del modelo en base de datos.
+9. Mostrar el archivo asociado en la UI.
+
+Aunque el repo conserva capacidades heredadas de la version anterior, en esta etapa la interfaz se reenfoco en:
+
+- persistencia
+- ficha administrativa
+- gestion del modelo 3D
+
+## Reinterpretacion incremental del repositorio existente
+
+El repositorio ya venia mas avanzado que estas fases. Para no romper continuidad:
+
+- no se rehizo el proyecto desde cero
+- no se borraron capacidades correctas
+- se reinterpretaron modelos y pantallas hacia el flujo axial 2.0
+- se mantuvo la app ejecutable en todo momento
+
+## Modelos relevantes en esta etapa
+
+- `Project`
+- `UploadedModel`
+- `DrawingJob`
+- `ExportFile`
+- `TemplateProfile`
+
+### Campos principales incorporados o reinterpretados
+
+`Project`
+- `project_name`
+- `part_name`
+- `description`
+- `material`
+- `finish`
+- `author`
+- `revision`
+- `notes`
+
+`UploadedModel`
+- `project_id`
+- `original_filename`
+- `stored_filename`
+- `file_type`
+- `uploaded_at`
+
+## Regla de negocio actual
+
+- STEP es el formato principal preferido.
+- IGES se acepta como alternativa.
+- La UI lo indica explicitamente al mostrar el archivo cargado.
 
 ## Stack
 
@@ -24,13 +73,8 @@ El flujo principal navegable ya esta implementado:
 - SQLite
 - python-dotenv
 - pytest
-- FreeCAD opcional
-- TechDraw opcional
-- ezdxf
-- reportlab
-- Ollama opcional
 
-## Estructura del proyecto
+## Estructura actual
 
 ```text
 /app
@@ -41,6 +85,8 @@ El flujo principal navegable ya esta implementado:
   /static
   /utils
   /cad
+  /drawing
+  /exports
   /ai
 /uploads
 /exports
@@ -54,12 +100,11 @@ CHANGELOG.md
 NEXT_STEPS.md
 ```
 
-## Instalacion completa
+## Puesta en marcha
 
-### 1. Crear y activar entorno virtual
+### 1. Activar entorno virtual
 
 ```powershell
-python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
@@ -85,7 +130,7 @@ Abrir `http://127.0.0.1:5000`.
 
 ## Variables de entorno
 
-La app funciona sin `.env`, pero se puede personalizar copiando `.env.example`:
+La base sigue soportando las variables del proyecto existente:
 
 ```env
 APP_ENV=development
@@ -97,73 +142,7 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 ```
 
-## Configuracion de FreeCAD
-
-FreeCAD sigue siendo opcional. Si no esta instalado:
-
-- la app sigue levantando
-- el upload sigue funcionando
-- el analisis usa un modo demo con dimensiones estimadas para no bloquear el flujo
-- el drawing usa arquitectura equivalente con preview SVG
-- la exportacion PDF/DXF sigue disponible
-- la UI indica si el analisis fue hecho con FreeCAD o con el fallback interno de la app
-
-### Windows
-
-1. Instalar FreeCAD.
-2. Identificar la carpeta con los modulos Python de FreeCAD.
-3. Configurar `FREECAD_LIB_PATH`, por ejemplo:
-
-```powershell
-$env:FREECAD_LIB_PATH="C:\Program Files\FreeCAD 0.21\bin"
-```
-
-4. Reiniciar la terminal.
-5. Ejecutar:
-
-```powershell
-python init_db.py
-python run.py
-```
-
-Si `FREECAD_LIB_PATH` no apunta a una instalacion valida, la app usa un fallback demo y mantiene el flujo navegable.
-
-## Configuracion de Ollama
-
-La integracion con Ollama es opcional y desacoplada. Si Ollama no esta disponible, la app sigue funcionando y muestra ayuda local.
-
-### Variables necesarias
-
-- `OLLAMA_ENABLED=true`
-- `OLLAMA_BASE_URL=http://localhost:11434`
-- `OLLAMA_MODEL=llama3.2`
-
-### Ejemplo en PowerShell
-
-```powershell
-$env:OLLAMA_ENABLED="true"
-$env:OLLAMA_BASE_URL="http://localhost:11434"
-$env:OLLAMA_MODEL="llama3.2"
-python run.py
-```
-
-### Casos de uso soportados
-
-- sugerir nombre tecnico de pieza
-- sugerir descripcion
-- advertir campos faltantes
-- ayudar a completar cajetin
-- explicar que genero la app
-
-Si Ollama no responde o esta desactivado, el detalle del proyecto muestra una respuesta local en lugar de cortar el flujo.
-
-## Exportacion y preview
-
-- El preview web se guarda como SVG.
-- La exportacion a PDF usa `reportlab`.
-- La exportacion a DXF usa `ezdxf`.
-- Los archivos se guardan en `/exports`.
-- La metadata queda registrada en `ExportFile`.
+En estas fases no hace falta configurar FreeCAD ni Ollama para usar el flujo principal de persistencia + uploads.
 
 ## Testing
 
@@ -173,44 +152,20 @@ Ejecutar:
 pytest
 ```
 
-Cobertura actual basica:
+## Limitaciones reales en este punto
 
-- creacion de proyecto
-- validacion de archivos permitidos y no permitidos
-- subida de archivo
-- endpoints principales
-- analisis y drawing preliminar
-- exportacion PDF y DXF
-- fallback de Ollama
-- respuesta mockeada de Ollama
-
-## Limitaciones reales del MVP
-
-- Solo trabaja con piezas individuales.
-- No soporta ensamblajes.
-- No implementa BOM ni balloons.
-- No promete acotado universal ni layout final perfecto.
-- La integracion profunda con FreeCAD/TechDraw depende del entorno local.
-- Cuando FreeCAD no esta disponible, las dimensiones del analisis se estiman en modo demo para sostener la navegacion del MVP.
-- El drawing generado es preliminar y sirve como base operativa, no como plano definitivo universal.
-- Ollama es totalmente opcional.
+- todavia no se hace clasificacion axial real
+- todavia no se genera el drawing especializado de tres vistas
+- todavia no se agrego la estrategia especifica de corte longitudinal
+- la especializacion del plano queda para la siguiente fase
 
 ## Como retomar si se interrumpe
 
-1. Revisar `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
-2. Activar `.venv`.
-3. Ejecutar `pip install -r requirements.txt`.
-4. Verificar `FREECAD_LIB_PATH` si queres usar integracion local de FreeCAD.
-5. Verificar `OLLAMA_ENABLED`, `OLLAMA_BASE_URL` y `OLLAMA_MODEL` si queres asistencia IA.
-6. Ejecutar `python init_db.py`.
-7. Validar con `pytest`.
-8. Levantar la app con `python run.py`.
-
-## Proximos pasos sugeridos
-
-- mejorar integracion real con FreeCAD y TechDraw
-- enriquecer templates y cajetin editable
-- mejorar cotas principales
-- separar mejor preview web vs salida final
-- agregar cola de jobs si el flujo crece
-- sumar asistencia IA mas contextual sin volverla obligatoria
+1. Inspeccionar primero la estructura actual del repositorio.
+2. Leer `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
+3. Activar `.venv`.
+4. Ejecutar `pip install -r requirements.txt`.
+5. Ejecutar `python init_db.py`.
+6. Validar con `pytest`.
+7. Levantar la app con `python run.py`.
+8. Continuar solo con la siguiente fase pendiente de la version 2.0.

@@ -120,7 +120,18 @@ def upload_model(project_id: int):
         rollback_session()
         flash("No se pudo registrar el archivo en la base de datos.", "danger")
     else:
-        flash("Archivo CAD asociado correctamente al proyecto.", "success")
+        uploaded_model = (
+            UploadedModel.query.filter_by(project_id=project.id)
+            .order_by(UploadedModel.created_at.desc())
+            .first()
+        )
+        if uploaded_model and uploaded_model.file_type in {"iges", "igs"}:
+            flash(
+                "Archivo IGES asociado correctamente. STEP sigue siendo el formato preferido para esta version.",
+                "warning",
+            )
+        else:
+            flash("Archivo STEP/IGES asociado correctamente al proyecto.", "success")
 
     return redirect(url_for("projects.detail", project_id=project.id))
 

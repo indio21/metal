@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}{{ project.name }} | Metal MVP{% endblock %}
+{% block title %}{{ project.resolved_part_name }} | Metal MVP{% endblock %}
 
 {% block content %}
 <section class="page-header mb-4">
   <div>
     <span class="section-kicker">Ficha de pieza</span>
-    <h1 class="h3 mt-2 mb-2">{{ project.name }}</h1>
+    <h1 class="h3 mt-2 mb-2">{{ project.resolved_part_name }}</h1>
     <p class="text-secondary mb-0">
-      Vista administrativa de la pieza individual. Desde aca podes revisar y ajustar la informacion base antes de anexar CAD.
+      Vista administrativa de la pieza axial. Desde aca podes revisar los datos base y gestionar el archivo STEP/IGES asociado.
     </p>
   </div>
   <div class="page-header-actions">
@@ -29,6 +29,10 @@
           <span class="badge rounded-pill {{ project.status_badge_class }}">{{ project.status_label }}</span>
         </div>
         <dl class="row mb-0 project-meta">
+          <dt class="col-sm-4">Proyecto</dt>
+          <dd class="col-sm-8">{{ project.resolved_project_name }}</dd>
+          <dt class="col-sm-4">Nombre de pieza</dt>
+          <dd class="col-sm-8">{{ project.resolved_part_name }}</dd>
           <dt class="col-sm-4">Codigo de pieza</dt>
           <dd class="col-sm-8">{{ project.part_number or "Sin codigo asignado" }}</dd>
           <dt class="col-sm-4">Revision</dt>
@@ -37,13 +41,17 @@
           <dd class="col-sm-8">{{ project.author or "Sin autor" }}</dd>
           <dt class="col-sm-4">Material</dt>
           <dd class="col-sm-8">{{ project.material or "No definido" }}</dd>
+          <dt class="col-sm-4">Terminacion</dt>
+          <dd class="col-sm-8">{{ project.finish or "No definida" }}</dd>
+          <dt class="col-sm-4">Descripcion</dt>
+          <dd class="col-sm-8">{{ project.description or "Sin descripcion cargada." }}</dd>
           <dt class="col-sm-4">Template</dt>
-          <dd class="col-sm-8">{{ project.template.name if project.template else "Sin template seleccionado" }}</dd>
+          <dd class="col-sm-8">{{ project.template_profile.name if project.template_profile else "Sin template profile seleccionado" }}</dd>
           <dt class="col-sm-4">Creado</dt>
           <dd class="col-sm-8">{{ project.created_at.strftime("%Y-%m-%d %H:%M") }}</dd>
           <dt class="col-sm-4">Actualizado</dt>
           <dd class="col-sm-8">{{ project.updated_at.strftime("%Y-%m-%d %H:%M") }}</dd>
-          <dt class="col-sm-4">Observaciones</dt>
+          <dt class="col-sm-4">Notas</dt>
           <dd class="col-sm-8">{{ project.notes or "Sin observaciones cargadas." }}</dd>
         </dl>
       </div>
@@ -55,7 +63,7 @@
         <span class="section-kicker">Modelo CAD</span>
         <h2 class="h5 mt-2 mb-3">Subir STEP o IGES</h2>
         <p class="small text-secondary mb-3">
-          Formatos aceptados: `.step`, `.stp`, `.iges`, `.igs`. La importacion con FreeCAD depende del entorno local y mantiene fallback controlado.
+          Formatos aceptados: `.step`, `.stp`, `.iges`, `.igs`. Preferimos STEP como formato principal y aceptamos IGES como alternativa.
         </p>
         <form method="post" action="{{ url_for('projects.upload_model', project_id=project.id) }}" enctype="multipart/form-data">
           <div class="mb-3">
@@ -73,26 +81,21 @@
         <h2 class="h5 mt-2 mb-3">Estado del flujo</h2>
         <div class="stack-panel">
           <div class="stack-item">
-            <span class="stack-label">Modelos CAD anexados</span>
+            <span class="stack-label">Modelos 3D anexados</span>
             <strong class="stack-value">{{ project.uploaded_models|length }}</strong>
           </div>
           <div class="stack-item">
-            <span class="stack-label">Drawing jobs</span>
+            <span class="stack-label">Drawing jobs heredados</span>
             <strong class="stack-value">{{ project.drawing_jobs|length }}</strong>
           </div>
           <div class="stack-item">
-            <span class="stack-label">Archivos exportados</span>
+            <span class="stack-label">Exportaciones heredadas</span>
             <strong class="stack-value">{{ project.export_files|length }}</strong>
           </div>
         </div>
         <p class="small text-secondary mt-3 mb-0">
-          El flujo ya contempla carga CAD, analisis, drawing preliminar y exportaciones derivadas por formato.
+          En esta etapa de la version 2.0 nos centramos en persistencia del proyecto y gestion segura del modelo STEP/IGES.
         </p>
-        {% if project.uploaded_models %}
-          <form method="post" action="{{ url_for('projects.generate_drawing', project_id=project.id) }}" class="mt-3">
-            <button class="btn btn-primary w-100" type="submit">Generar drawing</button>
-          </form>
-        {% endif %}
       </div>
     </div>
 
@@ -106,17 +109,18 @@
               <div class="upload-item">
                 <div class="fw-semibold text-break">{{ model.original_filename or model.stored_filename }}</div>
                 <div class="small text-secondary">
-                  {{ model.file_format|upper if model.file_format else "SIN FORMATO" }} - {{ model.created_at.strftime("%Y-%m-%d %H:%M") }}
+                  {{ model.file_type|upper if model.file_type else "SIN FORMATO" }} - {{ model.uploaded_at.strftime("%Y-%m-%d %H:%M") if model.uploaded_at else "Sin fecha" }}
                 </div>
                 <div class="small text-secondary text-break">{{ model.storage_path }}</div>
                 <div class="d-flex flex-wrap gap-2 mt-2">
                   <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.download_model', project_id=project.id, model_id=model.id) }}">
                     Descargar
                   </a>
-                  <form method="post" action="{{ url_for('projects.analyze_model', project_id=project.id) }}">
-                    <input type="hidden" name="model_id" value="{{ model.id }}">
-                    <button class="btn btn-sm btn-dark" type="submit">Analizar modelo</button>
-                  </form>
+                  {% if model.file_type in ["iges", "igs"] %}
+                    <span class="badge text-bg-secondary align-self-center">IGES alternativo</span>
+                  {% else %}
+                    <span class="badge text-bg-success align-self-center">STEP preferido</span>
+                  {% endif %}
                 </div>
               </div>
             {% endfor %}
@@ -131,239 +135,11 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <span class="section-kicker">Analisis CAD</span>
-        <h2 class="h5 mt-2 mb-3">Resultado basico del modelo</h2>
-        {% if latest_analysis_job %}
-          <div class="upload-item">
-            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
-              <strong>Estado: {{ latest_analysis_job.status }}</strong>
-              <span class="small text-secondary">
-                {{ latest_analysis_job.finished_at.strftime("%Y-%m-%d %H:%M") if latest_analysis_job.finished_at else "En proceso" }}
-              </span>
-            </div>
-            <div class="small text-secondary mb-2">
-              Backend: {{ latest_analysis_job.analyzer_backend or "No definido" }}
-            </div>
-            <div class="small text-secondary mb-3">
-              Archivo fuente:
-              {{ latest_analysis_job.uploaded_model.original_filename if latest_analysis_job.uploaded_model else "Sin modelo asociado" }}
-            </div>
-
-            {% if latest_analysis_job.status == "completed" %}
-              {% set analysis = latest_analysis_job.analysis_data %}
-              <div class="mb-3">
-                {% if analysis.get("is_demo_fallback") %}
-                  <span class="badge text-bg-warning">Analisis hecho por la app en modo demo</span>
-                {% else %}
-                  <span class="badge text-bg-success">Analisis hecho con FreeCAD</span>
-                {% endif %}
-              </div>
-              <div class="metric-list">
-                <div class="metric-row">
-                  <span>Dimension X</span>
-                  <strong>{{ analysis.get("dimensions", {}).get("x", "-") }}</strong>
-                </div>
-                <div class="metric-row">
-                  <span>Dimension Y</span>
-                  <strong>{{ analysis.get("dimensions", {}).get("y", "-") }}</strong>
-                </div>
-                <div class="metric-row">
-                  <span>Dimension Z</span>
-                  <strong>{{ analysis.get("dimensions", {}).get("z", "-") }}</strong>
-                </div>
-                <div class="metric-row">
-                  <span>Escala tentativa</span>
-                  <strong>{{ analysis.get("tentative_scale_factor", "-") }}</strong>
-                </div>
-              </div>
-              <p class="small text-secondary mt-3 mb-0">
-                {{ analysis.get("tentative_scale_note", "Sin nota de escala.") }}
-              </p>
-              <p class="small text-secondary mt-2 mb-0">
-                {% if analysis.get("is_demo_fallback") %}
-                  El flujo siguio sin FreeCAD usando una estimacion interna de la app para destrabar el MVP.
-                {% else %}
-                  Las dimensiones provienen del analisis real del modelo cargado con FreeCAD.
-                {% endif %}
-              </p>
-            {% else %}
-              <p class="text-secondary mb-0">
-                {{ latest_analysis_job.error_message or "No fue posible completar el analisis del modelo." }}
-              </p>
-            {% endif %}
-          </div>
-        {% else %}
-          <p class="text-secondary mb-0">
-            Todavia no se ejecuto ningun analisis de modelo para esta pieza.
-          </p>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <span class="section-kicker">Drawing preliminar</span>
-        <h2 class="h5 mt-2 mb-3">Hoja 2D generada</h2>
-        {% if latest_drawing_job %}
-          <div class="upload-item">
-            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
-              <strong>Estado: {{ latest_drawing_job.status }}</strong>
-              <span class="small text-secondary">
-                {{ latest_drawing_job.finished_at.strftime("%Y-%m-%d %H:%M") if latest_drawing_job.finished_at else "En proceso" }}
-              </span>
-            </div>
-            <div class="small text-secondary mb-2">
-              Backend: {{ latest_drawing_job.analyzer_backend or "No definido" }}
-            </div>
-            {% if latest_drawing_job.status == "completed" %}
-              {% set drawing = latest_drawing_job.analysis_data %}
-              <div class="small text-secondary mb-2">
-                Template: {{ drawing.get("template_name", "Sin template") }}
-              </div>
-              <div class="small text-secondary mb-3">
-                Escala: {{ drawing.get("scale_label", "Sin escala") }}
-              </div>
-              <div class="d-flex flex-wrap gap-2 mb-3">
-                <form method="post" action="{{ url_for('projects.export_drawing', project_id=project.id, drawing_job_id=latest_drawing_job.id) }}">
-                  <input type="hidden" name="export_format" value="pdf">
-                  <button class="btn btn-sm btn-dark" type="submit">Exportar PDF</button>
-                </form>
-                <form method="post" action="{{ url_for('projects.export_drawing', project_id=project.id, drawing_job_id=latest_drawing_job.id) }}">
-                  <input type="hidden" name="export_format" value="dxf">
-                  <button class="btn btn-sm btn-outline-dark" type="submit">Exportar DXF</button>
-                </form>
-              </div>
-              {% set preview = latest_drawing_job.export_files|selectattr('file_format', 'equalto', 'svg')|list|first %}
-              {% if preview %}
-                <a class="btn btn-sm btn-outline-dark mb-3" href="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=preview.id) }}" target="_blank">
-                  Abrir preview
-                </a>
-                <div class="drawing-preview-frame">
-                  <object
-                    data="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=preview.id) }}"
-                    type="image/svg+xml"
-                    class="drawing-preview-object"
-                  >
-                    Preview no disponible en este navegador.
-                  </object>
-                </div>
-              {% endif %}
-            {% else %}
-              <p class="text-secondary mb-0">
-                {{ latest_drawing_job.error_message or "No fue posible generar el drawing preliminar." }}
-              </p>
-            {% endif %}
-          </div>
-        {% else %}
-          <p class="text-secondary mb-0">
-            Todavia no se genero ningun drawing preliminar para esta pieza.
-          </p>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <span class="section-kicker">Exportaciones</span>
-        <h2 class="h5 mt-2 mb-3">Historial del proyecto</h2>
-        {% if export_history %}
-          <div class="upload-list">
-            {% for export in export_history %}
-              <div class="upload-item">
-                <div class="d-flex flex-wrap justify-content-between gap-2">
-                  <div class="fw-semibold text-break">
-                    {{ export.filename or ("export." ~ export.file_format) }}
-                  </div>
-                  <span class="small text-secondary">
-                    {{ export.created_at.strftime("%Y-%m-%d %H:%M") }}
-                  </span>
-                </div>
-                <div class="small text-secondary">
-                  {{ export.file_format|upper }} - Estado {{ export.status }}
-                </div>
-                <div class="small text-secondary text-break">
-                  {{ export.file_path or "Sin ruta almacenada" }}
-                </div>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                  {% if export.file_format == "svg" %}
-                    <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=export.id) }}" target="_blank">
-                      Abrir preview
-                    </a>
-                  {% else %}
-                    <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.download_export', project_id=project.id, export_id=export.id) }}">
-                      Descargar {{ export.file_format|upper }}
-                    </a>
-                  {% endif %}
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p class="text-secondary mb-0">
-            Todavia no hay exportaciones registradas para esta pieza.
-          </p>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-          <div>
-            <span class="section-kicker">Asistencia opcional</span>
-            <h2 class="h5 mt-2 mb-1">Ollama y ayuda local</h2>
-            <p class="text-secondary mb-0">
-              La app sigue funcionando aunque Ollama no este activo. Si no responde, se muestra una ayuda local controlada.
-            </p>
-          </div>
-          <span class="badge rounded-pill {{ 'text-bg-success' if ollama_status.enabled else 'text-bg-secondary' }}">
-            {{ 'Ollama activo' if ollama_status.enabled else 'Ollama opcional desactivado' }}
-          </span>
-        </div>
-
-        <div class="small text-secondary mb-3">
-          URL: {{ ollama_status.base_url }} | Modelo: {{ ollama_status.model }}
-        </div>
-
-        <div class="d-flex flex-wrap gap-2 mb-3">
-          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
-            <input type="hidden" name="assistant_action" value="technical_name">
-            <button class="btn btn-sm btn-outline-dark" type="submit">Nombre tecnico</button>
-          </form>
-          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
-            <input type="hidden" name="assistant_action" value="description">
-            <button class="btn btn-sm btn-outline-dark" type="submit">Descripcion</button>
-          </form>
-          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
-            <input type="hidden" name="assistant_action" value="missing_fields">
-            <button class="btn btn-sm btn-outline-dark" type="submit">Campos faltantes</button>
-          </form>
-          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
-            <input type="hidden" name="assistant_action" value="title_block">
-            <button class="btn btn-sm btn-outline-dark" type="submit">Completar cajetin</button>
-          </form>
-          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
-            <input type="hidden" name="assistant_action" value="explain_output">
-            <button class="btn btn-sm btn-outline-dark" type="submit">Explicar resultado</button>
-          </form>
-        </div>
-
-        {% if ai_result %}
-          <div class="upload-item">
-            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
-              <strong>{{ ai_result.title }}</strong>
-              <span class="small text-secondary">{{ ai_result.backend }}</span>
-            </div>
-            {% if ai_result.notice %}
-              <p class="small text-secondary mb-2">{{ ai_result.notice }}</p>
-            {% endif %}
-            <div class="small" style="white-space: pre-line;">{{ ai_result.content }}</div>
-          </div>
-        {% else %}
-          <p class="text-secondary mb-0">
-            Todavia no se solicito ninguna ayuda opcional para esta pieza.
-          </p>
-        {% endif %}
+        <span class="section-kicker">Continuidad 2.0</span>
+        <h2 class="h5 mt-2 mb-3">Proximo paso del proyecto</h2>
+        <p class="text-secondary mb-0">
+          En las siguientes fases se va a clasificar la pieza axial, definir la estrategia de vista lateral, vista de extremo y corte longitudinal, y recien despues se retomara la generacion de drawing especializado.
+        </p>
       </div>
     </div>
 

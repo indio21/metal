@@ -1,15 +1,16 @@
 # Changelog
 
-## 2026-03-31
+## 2026-04-01
 
-- Se implemento la Fase 8 sobre la base existente sin rehacer el proyecto.
-- Se corrigio `app/routes/main.py`, que habia quedado corrupto, y se dejo nuevamente operativo el dashboard.
-- Se agrego `app/ai/ollama_service.py` como integracion opcional y desacoplada con Ollama.
-- Se incorporaron variables de entorno `OLLAMA_ENABLED`, `OLLAMA_BASE_URL` y `OLLAMA_MODEL`.
-- Se agrego asistencia opcional desde el detalle del proyecto para nombre tecnico, descripcion, faltantes, cajetin y explicacion del resultado.
-- Se mantuvo fallback local cuando Ollama no esta disponible o esta desactivado.
-- Se actualizaron dashboard, detalle del proyecto y documentacion final del MVP.
-- Se ampliaron las pruebas para cubrir fallback de Ollama y respuesta mockeada de IA.
-- Se actualizo el flujo CAD para que, si FreeCAD no esta disponible, el analisis pase a un modo demo en lugar de fallar.
-- Se habilito generacion de drawing y exportacion PDF/DXF aun sin FreeCAD instalado.
-- Se agrego una indicacion visible en la UI para distinguir si el analisis fue hecho con FreeCAD o con el fallback interno de la app.
+- Se implementaron de forma incremental las Fases 2 y 3 de la version 2.0 sobre el repositorio existente.
+- Se extendio `Project` con `project_name`, `part_name`, `description` y `finish`.
+- Se reinterpretaron los nombres heredados del modelo para mantener compatibilidad con la base previa.
+- Se agregaron alias utiles en `UploadedModel` para `file_type` y `uploaded_at`.
+- Se incorporo `TemplateProfile` como alias semantico para la nueva version 2.0 sin romper la base existente.
+- Se actualizo la sincronizacion de SQLite para agregar las nuevas columnas necesarias.
+- Se adapto el formulario de alta/edicion para proyecto y pieza axial.
+- Se mejoraron listado y detalle para mostrar proyecto, pieza, descripcion y terminacion.
+- Se mantuvo la carga segura de STEP/IGES desde el detalle del proyecto.
+- Se reforzo la regla de negocio para preferir STEP y aceptar IGES como alternativa.
+- Se actualizaron las pruebas para cubrir la reinterpretacion 2.0 y la gestion del modelo.
+- Se actualizaron `README.md` y `NEXT_STEPS.md` para dejar continuidad clara hacia la siguiente fase.

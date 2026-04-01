@@ -6,11 +6,11 @@
 <section class="hero-card p-4 p-lg-5 mb-4">
   <div class="row align-items-center g-4">
     <div class="col-lg-7">
-      <span class="badge text-bg-light border mb-3">Fase 3 activa</span>
-      <h1 class="display-6 fw-semibold mb-3">Gestion web lista para preparar piezas antes del CAD</h1>
+      <span class="badge text-bg-light border mb-3">Fase 8 - MVP navegable</span>
+      <h1 class="display-6 fw-semibold mb-3">Flujo base completo para piezas individuales</h1>
       <p class="lead text-secondary mb-4">
-        Esta etapa deja la administracion de proyectos mas solida: CRUD basico, templates opcionales,
-        detalle claro de pieza y una navegacion lista para conectar uploads STEP/IGES en la fase 4.
+        El MVP ya cubre gestion de proyectos, carga STEP/IGES, analisis CAD base, drawing preliminar 2D,
+        preview SVG, exportacion PDF/DXF y asistencia opcional con Ollama sin volverla obligatoria.
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Crear pieza</a>
@@ -30,6 +30,10 @@
         <div class="stat-item">
           <span class="stat-label">Con template asignado</span>
           <strong class="stat-value">{{ assigned_template_count }}</strong>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Drawings completados</span>
+          <strong class="stat-value">{{ completed_drawings }}</strong>
         </div>
       </div>
     </div>
@@ -55,6 +59,10 @@
             <span>Listas para analisis</span>
             <strong>{{ ready_count }}</strong>
           </div>
+          <div class="metric-row">
+            <span>Modelos cargados</span>
+            <strong>{{ uploaded_model_count }}</strong>
+          </div>
         </div>
       </div>
     </div>
@@ -77,10 +85,12 @@
   <div class="col-md-4">
     <div class="card shadow-sm h-100">
       <div class="card-body">
-        <span class="section-kicker">Siguiente fase</span>
-        <h2 class="h5 mt-2 mb-3">Preparado para uploads</h2>
+        <span class="section-kicker">Infraestructura</span>
+        <h2 class="h5 mt-2 mb-3">Exportacion e IA opcional</h2>
         <p class="text-secondary mb-3">
-          La capa web ya puede anexar archivos CAD al proyecto sin rehacer el flujo principal.
+          Exportaciones generadas: <strong>{{ generated_exports }}</strong><br>
+          Ollama: <strong>{{ "habilitado" if ollama_enabled else "opcional desactivado" }}</strong>
+          {% if ollama_enabled %}<br>Modelo activo: <strong>{{ ollama_model }}</strong>{% endif %}
         </p>
         <a class="btn btn-outline-dark btn-sm" href="{{ url_for('projects.index') }}">Ver proyectos activos</a>
       </div>

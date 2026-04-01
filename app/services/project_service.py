@@ -2,7 +2,7 @@ from collections.abc import Mapping
 
 from sqlalchemy import func
 from app.extensions import db
-from app.models import Project, Template
+from app.models import DrawingJob, ExportFile, Project, Template, UploadedModel
 
 
 PROJECT_STATUS_OPTIONS = [
@@ -22,6 +22,9 @@ def get_project_dashboard_data() -> dict[str, object]:
     pending_upload_count = Project.query.filter_by(status="pending_upload").count()
     ready_count = Project.query.filter_by(status="ready").count()
     assigned_template_count = Project.query.filter(Project.template_id.isnot(None)).count()
+    uploaded_model_count = UploadedModel.query.count()
+    completed_drawings = DrawingJob.query.filter_by(output_type="preliminary_2d", status="completed").count()
+    generated_exports = ExportFile.query.filter_by(status="generated").count()
     latest_update = db.session.query(func.max(Project.updated_at)).scalar()
     recent_projects = Project.query.order_by(Project.updated_at.desc()).limit(6).all()
 
@@ -31,6 +34,9 @@ def get_project_dashboard_data() -> dict[str, object]:
         "pending_upload_count": pending_upload_count,
         "ready_count": ready_count,
         "assigned_template_count": assigned_template_count,
+        "uploaded_model_count": uploaded_model_count,
+        "completed_drawings": completed_drawings,
+        "generated_exports": generated_exports,
         "latest_update": latest_update,
         "recent_projects": recent_projects,
     }

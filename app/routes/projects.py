@@ -1,7 +1,8 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, session, url_for
 
+from app.ai.ollama_service import get_ollama_runtime_status, request_project_assistance
 from app.cad.cad_import_service import analyze_project_model
 from app.cad.techdraw_service import DrawingGenerationError, generate_preliminary_drawing, resolve_export_path
 from app.extensions import db
@@ -31,6 +32,7 @@ from app.services.upload_service import (
 )
 
 projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
+PROJECT_AI_RESULT_KEY = "project_ai_result"
 
 @projects_bp.get("")
 def index():
@@ -84,12 +86,17 @@ def detail(project_id: int):
         .first()
     )
     export_history = sorted(project.export_files, key=lambda export: export.created_at, reverse=True)
+    ai_result = session.get(PROJECT_AI_RESULT_KEY)
+    if ai_result and ai_result.get("project_id") != project.id:
+        ai_result = None
     return render_template(
         "projects/detail.html",
         project=project,
         latest_analysis_job=latest_analysis_job,
         latest_drawing_job=latest_drawing_job,
         export_history=export_history,
+        ai_result=ai_result,
+        ollama_status=get_ollama_runtime_status(current_app.config),
     )
 
 
@@ -230,6 +237,40 @@ def export_drawing(project_id: int, drawing_job_id: int):
             f"Exportacion {export_file.file_format.upper()} generada correctamente.",
             "success",
         )
+
+    return redirect(url_for("projects.detail", project_id=project.id))
+
+
+@projects_bp.post("/<int:project_id>/ai-assist")
+def ai_assist(project_id: int):
+    project = db.get_or_404(Project, project_id)
+    action = (request.form.get("assistant_action") or "").strip()
+    latest_drawing_job = (
+        DrawingJob.query.filter_by(project_id=project.id, output_type="preliminary_2d")
+        .order_by(DrawingJob.created_at.desc())
+        .first()
+    )
+    export_history = sorted(project.export_files, key=lambda export: export.created_at, reverse=True)
+    assistance = request_project_assistance(
+        project=project,
+        action=action,
+        config=current_app.config,
+        latest_drawing_job=latest_drawing_job,
+        export_history=export_history,
+    )
+    session[PROJECT_AI_RESULT_KEY] = {
+        "project_id": project.id,
+        "title": assistance.title,
+        "content": assistance.content,
+        "backend": assistance.backend,
+        "used_fallback": assistance.used_fallback,
+        "notice": assistance.notice,
+    }
+
+    if assistance.used_fallback:
+        flash("Asistencia local mostrada porque Ollama no esta disponible.", "warning")
+    else:
+        flash("Asistencia IA generada correctamente.", "success")
 
     return redirect(url_for("projects.detail", project_id=project.id))
 

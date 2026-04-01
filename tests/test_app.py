@@ -577,3 +577,57 @@ def test_export_drawing_to_dxf_and_download_file():
     download_response = client.get(f"/projects/{project_id}/exports/{export_id}/download")
     assert download_response.status_code == 200
     assert download_response.mimetype == "application/dxf"
+
+
+def test_ai_assist_fallback_when_ollama_disabled():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza IA local", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/ai-assist",
+        data={"assistant_action": "missing_fields"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Asistencia local mostrada porque Ollama no esta disponible." in response.data
+    assert b"Campos faltantes" in response.data
+    assert b"Faltantes sugeridos para revisar" in response.data
+
+
+def test_ai_assist_uses_mocked_ollama_response(monkeypatch):
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+    app.config["OLLAMA_ENABLED"] = True
+    app.config["OLLAMA_MODEL"] = "llama-test"
+
+    with app.app_context():
+        project = Project(name="Brida inteligente", revision="B", status="ready", material="Acero")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    def fake_generate(*, base_url: str, model: str, prompt: str) -> str:
+        assert model == "llama-test"
+        assert "Brida inteligente" in prompt
+        return "Nombre tecnico sugerido: Brida de fijacion mecanizada."
+
+    monkeypatch.setattr("app.ai.ollama_service._call_ollama_generate", fake_generate)
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/ai-assist",
+        data={"assistant_action": "technical_name"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Asistencia IA generada correctamente." in response.data
+    assert b"Brida de fijacion mecanizada" in response.data

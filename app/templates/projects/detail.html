@@ -292,6 +292,67 @@
       </div>
     </div>
 
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+          <div>
+            <span class="section-kicker">Asistencia opcional</span>
+            <h2 class="h5 mt-2 mb-1">Ollama y ayuda local</h2>
+            <p class="text-secondary mb-0">
+              La app sigue funcionando aunque Ollama no este activo. Si no responde, se muestra una ayuda local controlada.
+            </p>
+          </div>
+          <span class="badge rounded-pill {{ 'text-bg-success' if ollama_status.enabled else 'text-bg-secondary' }}">
+            {{ 'Ollama activo' if ollama_status.enabled else 'Ollama opcional desactivado' }}
+          </span>
+        </div>
+
+        <div class="small text-secondary mb-3">
+          URL: {{ ollama_status.base_url }} | Modelo: {{ ollama_status.model }}
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="technical_name">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Nombre tecnico</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="description">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Descripcion</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="missing_fields">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Campos faltantes</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="title_block">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Completar cajetin</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="explain_output">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Explicar resultado</button>
+          </form>
+        </div>
+
+        {% if ai_result %}
+          <div class="upload-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <strong>{{ ai_result.title }}</strong>
+              <span class="small text-secondary">{{ ai_result.backend }}</span>
+            </div>
+            {% if ai_result.notice %}
+              <p class="small text-secondary mb-2">{{ ai_result.notice }}</p>
+            {% endif %}
+            <div class="small" style="white-space: pre-line;">{{ ai_result.content }}</div>
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no se solicito ninguna ayuda opcional para esta pieza.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
     <div class="card shadow-sm">
       <div class="card-body">
         <span class="section-kicker">Acciones</span>

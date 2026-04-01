@@ -28,6 +28,12 @@ class CADAnalysisResult:
     tentative_scale_factor: float
     tentative_scale_note: str
     is_demo_fallback: bool = False
+    dominant_axis: str = "x"
+    dominant_axis_length: float = 0.0
+    transverse_similarity: float = 0.0
+    axial_ratio: float = 0.0
+    family_classification: str = "unclassified"
+    classification_note: str = ""
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -37,6 +43,12 @@ class CADAnalysisResult:
             "tentative_scale_factor": self.tentative_scale_factor,
             "tentative_scale_note": self.tentative_scale_note,
             "is_demo_fallback": self.is_demo_fallback,
+            "dominant_axis": self.dominant_axis,
+            "dominant_axis_length": self.dominant_axis_length,
+            "transverse_similarity": self.transverse_similarity,
+            "axial_ratio": self.axial_ratio,
+            "family_classification": self.family_classification,
+            "classification_note": self.classification_note,
         }
 
 
@@ -59,6 +71,13 @@ class FreeCADAdapter:
         if max(x_length, y_length, z_length) <= 0:
             raise CADAnalysisError("El modelo no expone dimensiones globales validas.")
 
+        dimensions = {
+            "x": round(x_length, 3),
+            "y": round(y_length, 3),
+            "z": round(z_length, 3),
+        }
+        indicators = _build_axial_indicators(dimensions)
+
         return CADAnalysisResult(
             backend="FreeCAD",
             bounding_box={
@@ -69,13 +88,15 @@ class FreeCADAdapter:
                 "ymax": round(float(getattr(bound_box, "YMax", 0.0)), 3),
                 "zmax": round(float(getattr(bound_box, "ZMax", 0.0)), 3),
             },
-            dimensions={
-                "x": round(x_length, 3),
-                "y": round(y_length, 3),
-                "z": round(z_length, 3),
-            },
+            dimensions=dimensions,
             tentative_scale_factor=1.0,
             tentative_scale_note="Se conserva la escala nativa del archivo; STEP/IGES no siempre expone unidades consistentes.",
+            dominant_axis=indicators["dominant_axis"],
+            dominant_axis_length=indicators["dominant_axis_length"],
+            transverse_similarity=indicators["transverse_similarity"],
+            axial_ratio=indicators["axial_ratio"],
+            family_classification=indicators["family_classification"],
+            classification_note=indicators["classification_note"],
         )
 
     def _load_modules(self):
@@ -183,6 +204,9 @@ def _build_demo_analysis_result(*, uploaded_model: UploadedModel, file_path: Pat
     dim_y = round(float(min(base_y, dim_x * 0.75)), 3)
     dim_z = round(float(min(base_z, max(dim_y * 0.8, 18.0))), 3)
 
+    dimensions = {"x": dim_x, "y": dim_y, "z": dim_z}
+    indicators = _build_axial_indicators(dimensions)
+
     return CADAnalysisResult(
         backend="demo_fallback",
         bounding_box={
@@ -193,11 +217,52 @@ def _build_demo_analysis_result(*, uploaded_model: UploadedModel, file_path: Pat
             "ymax": dim_y,
             "zmax": dim_z,
         },
-        dimensions={"x": dim_x, "y": dim_y, "z": dim_z},
+        dimensions=dimensions,
         tentative_scale_factor=1.0,
         tentative_scale_note=(
             "FreeCAD no esta disponible en este entorno. "
             "Se genero una estimacion demo de dimensiones para destrabar el flujo del MVP."
         ),
         is_demo_fallback=True,
+        dominant_axis=indicators["dominant_axis"],
+        dominant_axis_length=indicators["dominant_axis_length"],
+        transverse_similarity=indicators["transverse_similarity"],
+        axial_ratio=indicators["axial_ratio"],
+        family_classification=indicators["family_classification"],
+        classification_note=indicators["classification_note"],
     )
+
+
+def _build_axial_indicators(dimensions: dict[str, float]) -> dict[str, float | str]:
+    ordered_axes = sorted(dimensions.items(), key=lambda item: item[1], reverse=True)
+    dominant_axis, dominant_length = ordered_axes[0]
+    transverse = [max(float(value), 1e-6) for _axis, value in ordered_axes[1:]]
+    transverse_max = max(transverse)
+    transverse_min = min(transverse)
+    transverse_mean = sum(transverse) / len(transverse)
+
+    transverse_similarity = round(transverse_min / transverse_max, 3)
+    axial_ratio = round(float(dominant_length) / max(transverse_mean, 1e-6), 3)
+    is_axial_candidate = axial_ratio >= 1.35 and transverse_similarity >= 0.55
+
+    if is_axial_candidate:
+        family_classification = "axial_turned_candidate"
+        classification_note = (
+            "La pieza presenta un eje dominante y seccion transversal relativamente pareja. "
+            "Es compatible con una estrategia axial o torneada."
+        )
+    else:
+        family_classification = "non_axial_or_uncertain"
+        classification_note = (
+            "La proporcion general no confirma claramente una pieza de revolucion. "
+            "Conviene revisar el modelo antes de aplicar una estrategia axial estricta."
+        )
+
+    return {
+        "dominant_axis": dominant_axis,
+        "dominant_axis_length": round(float(dominant_length), 3),
+        "transverse_similarity": transverse_similarity,
+        "axial_ratio": axial_ratio,
+        "family_classification": family_classification,
+        "classification_note": classification_note,
+    }

@@ -1,6 +1,6 @@
 # Metal MVP 2.0
 
-MVP web orientado a piezas torneadas, axiales o de revolucion. Esta iteracion trabaja de forma incremental sobre el repositorio existente y, en este punto, deja resueltas las Fases 2 y 3 de la version 2.0: persistencia para proyectos/piezas y gestion segura de archivos STEP/IGES.
+MVP web orientado a piezas torneadas, axiales o de revolucion. Esta iteracion trabaja de forma incremental sobre el repositorio existente y, en este punto, deja resueltas las Fases 4 y 5 de la version 2.0: analisis CAD con clasificacion axial y estrategia de vistas especifica para piezas torneadas.
 
 ## Estado actual
 
@@ -8,63 +8,30 @@ El proyecto ya permite:
 
 1. Crear proyectos reales.
 2. Registrar datos base de una pieza axial.
-3. Guardar la informacion en SQLite.
-4. Listar proyectos.
-5. Ver un detalle simple de proyecto/pieza.
-6. Subir archivos `.step`, `.stp`, `.iges` o `.igs`.
-7. Guardar el archivo de forma segura en `/uploads`.
-8. Persistir la metadata del modelo en base de datos.
-9. Mostrar el archivo asociado en la UI.
-
-Aunque el repo conserva capacidades heredadas de la version anterior, en esta etapa la interfaz se reenfoco en:
-
-- persistencia
-- ficha administrativa
-- gestion del modelo 3D
+3. Subir archivos `.step`, `.stp`, `.iges` o `.igs`.
+4. Analizar la pieza y detectar:
+   - bounding box
+   - dimensiones globales
+   - eje dominante
+   - indicadores de axialidad
+   - clasificacion axial o no concluyente
+5. Generar una estrategia de drawing especifica con:
+   - vista lateral principal
+   - vista de extremo
+   - corte longitudinal
+6. Visualizar un preview base de esa estrategia en la UI.
 
 ## Reinterpretacion incremental del repositorio existente
 
-El repositorio ya venia mas avanzado que estas fases. Para no romper continuidad:
+El repositorio venia de una version previa mas avanzada. Para respetar la continuidad:
 
 - no se rehizo el proyecto desde cero
 - no se borraron capacidades correctas
-- se reinterpretaron modelos y pantallas hacia el flujo axial 2.0
-- se mantuvo la app ejecutable en todo momento
+- se extendio la capa CAD existente
+- se agrego una capa de estrategia de vistas especializada en `app/drawing`
+- la app siguio ejecutable en todo momento
 
-## Modelos relevantes en esta etapa
-
-- `Project`
-- `UploadedModel`
-- `DrawingJob`
-- `ExportFile`
-- `TemplateProfile`
-
-### Campos principales incorporados o reinterpretados
-
-`Project`
-- `project_name`
-- `part_name`
-- `description`
-- `material`
-- `finish`
-- `author`
-- `revision`
-- `notes`
-
-`UploadedModel`
-- `project_id`
-- `original_filename`
-- `stored_filename`
-- `file_type`
-- `uploaded_at`
-
-## Regla de negocio actual
-
-- STEP es el formato principal preferido.
-- IGES se acepta como alternativa.
-- La UI lo indica explicitamente al mostrar el archivo cargado.
-
-## Stack
+## Stack actual
 
 - Python 3.11
 - Flask
@@ -73,6 +40,14 @@ El repositorio ya venia mas avanzado que estas fases. Para no romper continuidad
 - SQLite
 - python-dotenv
 - pytest
+
+La base existente tambien conserva:
+
+- FreeCAD opcional
+- TechDraw opcional
+- ezdxf
+- reportlab
+- Ollama opcional
 
 ## Estructura actual
 
@@ -130,8 +105,6 @@ Abrir `http://127.0.0.1:5000`.
 
 ## Variables de entorno
 
-La base sigue soportando las variables del proyecto existente:
-
 ```env
 APP_ENV=development
 SECRET_KEY=dev-secret-key
@@ -142,7 +115,46 @@ OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_MODEL=llama3.2
 ```
 
-En estas fases no hace falta configurar FreeCAD ni Ollama para usar el flujo principal de persistencia + uploads.
+## Configuracion CAD
+
+La integracion real con FreeCAD sigue siendo opcional.
+
+Si FreeCAD esta disponible:
+
+- la app intenta importar el STEP/IGES real
+- extrae bounding box y dimensiones reales
+- calcula el eje dominante y la clasificacion axial
+
+Si FreeCAD no esta disponible:
+
+- la app usa un fallback demo controlado
+- estima dimensiones base para no bloquear el flujo
+- igual permite clasificar y construir la estrategia de vistas
+
+### Windows
+
+Ejemplo de configuracion:
+
+```powershell
+$env:FREECAD_LIB_PATH="C:\Program Files\FreeCAD 0.21\bin"
+python init_db.py
+python run.py
+```
+
+## Flujo actual 2.0
+
+1. Crear proyecto y pieza.
+2. Subir STEP o IGES.
+3. Ejecutar `Analizar pieza`.
+4. Revisar si la pieza fue clasificada como axial o torneada.
+5. Ejecutar `Generar estrategia de vistas`.
+6. Ver preview base con lateral principal, extremo y corte longitudinal.
+
+## Regla de negocio vigente
+
+- STEP es el formato principal preferido.
+- IGES se acepta como alternativa.
+- la UI lo indica explicitamente.
 
 ## Testing
 
@@ -154,10 +166,11 @@ pytest
 
 ## Limitaciones reales en este punto
 
-- todavia no se hace clasificacion axial real
-- todavia no se genera el drawing especializado de tres vistas
-- todavia no se agrego la estrategia especifica de corte longitudinal
-- la especializacion del plano queda para la siguiente fase
+- la estrategia generada todavia es preliminar
+- no hay acotado completo
+- no hay exportacion axial final especializada en estas fases
+- la clasificacion axial se apoya en indicadores geometricos simples
+- el drawing final similar al cliente queda para la siguiente etapa
 
 ## Como retomar si se interrumpe
 

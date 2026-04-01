@@ -2,34 +2,33 @@
 
 ## Estado actual
 
-Las Fases 2 y 3 de la version 2.0 ya quedaron cubiertas sobre el proyecto existente:
+Las Fases 4 y 5 de la version 2.0 ya quedaron cubiertas:
 
-- persistencia real para proyecto y pieza
-- formulario de alta y edicion ampliado
-- listado y detalle simple de proyecto
-- carga segura de STEP/IGES
-- registro del modelo en base de datos
-- preferencia visible por STEP frente a IGES
+- analisis CAD base
+- clasificacion axial o torneada
+- deteccion de eje dominante
+- estrategia de vistas especializada
+- preview base de:
+  - lateral principal
+  - extremo
+  - corte longitudinal
 
 ## Siguiente fase exacta
 
-Continuar con la fase siguiente de la version 2.0 enfocandose en:
+Continuar con la siguiente fase de la version 2.0 enfocandose en:
 
-- clasificacion basica de pieza axial o torneada
-- deteccion de si el modelo pertenece a familia de revolucion
-- preparacion de la estrategia de drawing especializada
-- definicion de las tres vistas objetivo:
-  - lateral principal
-  - vista de extremo
-  - corte longitudinal
+- consolidar el drawing tecnico similar al ejemplo del cliente
+- mejorar layout, marco y cajetin
+- empezar a ubicar cotas basicas utiles
+- preparar exportacion final vectorial especializada
 
 ## Restricciones a respetar
 
 - no rehacer el proyecto desde cero
 - no borrar trabajo correcto salvo necesidad justificada
 - mantener el proyecto ejecutable al final de cada fase
-- no prometer todavia el drawing final del cliente
-- seguir priorizando piezas individuales
+- no introducir todavia GD&T completo
+- mantener el foco en piezas individuales axiales
 
 ## Como retomar si se interrumpe
 

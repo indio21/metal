@@ -362,6 +362,12 @@ def test_analyze_uploaded_model_success(monkeypatch):
             dimensions={"x": 120.0, "y": 45.0, "z": 30.0},
             tentative_scale_factor=1.0,
             tentative_scale_note="Escala base del archivo.",
+            dominant_axis="x",
+            dominant_axis_length=120.0,
+            transverse_similarity=0.667,
+            axial_ratio=3.2,
+            family_classification="axial_turned_candidate",
+            classification_note="Compatible con estrategia axial.",
         )
 
     monkeypatch.setattr(
@@ -380,7 +386,7 @@ def test_analyze_uploaded_model_success(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert b"Analisis del modelo completado correctamente." in response.data
+    assert b"Analisis de pieza completado correctamente." in response.data
 
     with app.app_context():
         drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
@@ -388,6 +394,8 @@ def test_analyze_uploaded_model_success(monkeypatch):
         assert drawing_job is not None
         assert drawing_job.status == "completed"
         assert drawing_job.analysis_data.get("dimensions", {}).get("x") == 120.0
+        assert drawing_job.analysis_data.get("dominant_axis") == "x"
+        assert drawing_job.analysis_data.get("family_classification") == "axial_turned_candidate"
         assert project.status == "ready"
 
 
@@ -437,6 +445,71 @@ def test_analyze_uploaded_model_uses_demo_fallback_when_freecad_is_unavailable(m
         assert drawing_job.status == "completed"
         assert drawing_job.analyzer_backend == "demo_fallback"
         assert drawing_job.analysis_data.get("is_demo_fallback") is True
+        assert drawing_job.analysis_data.get("family_classification") == "axial_turned_candidate"
+
+
+def test_generate_axial_strategy_builds_three_specific_views():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza axial estrategia", revision="A", status="ready")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        uploaded_model = UploadedModel(
+            project_id=project.id,
+            original_filename="axial.step",
+            stored_filename="axial.step",
+            file_format="step",
+            storage_path=f"project_{project.id}/axial.step",
+            status="uploaded",
+        )
+        app.extensions["sqlalchemy"].session.add(uploaded_model)
+        app.extensions["sqlalchemy"].session.commit()
+        upload_path = Path(app.config["UPLOAD_FOLDER"]) / uploaded_model.storage_path
+        upload_path.parent.mkdir(parents=True, exist_ok=True)
+        upload_path.write_bytes(b"step-data")
+        analysis_job = DrawingJob(
+            project_id=project.id,
+            uploaded_model_id=uploaded_model.id,
+            status="completed",
+            output_type="model_analysis",
+            analyzer_backend="demo_fallback",
+            analysis_summary=json.dumps(
+                {
+                    "backend": "demo_fallback",
+                    "dimensions": {"x": 180.0, "y": 48.0, "z": 46.0},
+                    "dominant_axis": "x",
+                    "axial_ratio": 3.83,
+                    "transverse_similarity": 0.958,
+                    "family_classification": "axial_turned_candidate",
+                    "classification_note": "Compatible con estrategia axial.",
+                }
+            ),
+        )
+        app.extensions["sqlalchemy"].session.add(analysis_job)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/generate-axial-strategy",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Estrategia de vistas axial generada correctamente." in response.data
+    assert b"Vista lateral principal" in response.data
+    assert b"Vista de extremo" in response.data
+    assert b"Corte longitudinal" in response.data
+
+    with app.app_context():
+        strategy_job = DrawingJob.query.filter_by(project_id=project_id, output_type="axial_strategy").first()
+        assert strategy_job is not None
+        assert strategy_job.status == "completed"
+        strategy_data = strategy_job.analysis_data
+        assert strategy_data.get("layout_name") == "axial_three_view_layout"
+        assert len(strategy_data.get("views", [])) == 3
 
 
 def test_full_flow_generates_dxf_without_freecad(monkeypatch):

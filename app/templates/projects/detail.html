@@ -116,6 +116,10 @@
                   <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.download_model', project_id=project.id, model_id=model.id) }}">
                     Descargar
                   </a>
+                  <form method="post" action="{{ url_for('projects.analyze_model', project_id=project.id) }}">
+                    <input type="hidden" name="model_id" value="{{ model.id }}">
+                    <button class="btn btn-sm btn-dark" type="submit">Analizar pieza</button>
+                  </form>
                   {% if model.file_type in ["iges", "igs"] %}
                     <span class="badge text-bg-secondary align-self-center">IGES alternativo</span>
                   {% else %}
@@ -135,11 +139,123 @@
 
     <div class="card shadow-sm mb-4">
       <div class="card-body">
-        <span class="section-kicker">Continuidad 2.0</span>
-        <h2 class="h5 mt-2 mb-3">Proximo paso del proyecto</h2>
-        <p class="text-secondary mb-0">
-          En las siguientes fases se va a clasificar la pieza axial, definir la estrategia de vista lateral, vista de extremo y corte longitudinal, y recien despues se retomara la generacion de drawing especializado.
-        </p>
+        <span class="section-kicker">Analisis CAD</span>
+        <h2 class="h5 mt-2 mb-3">Clasificacion axial de la pieza</h2>
+        {% if latest_analysis_job %}
+          <div class="upload-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <strong>Estado: {{ latest_analysis_job.status }}</strong>
+              <span class="small text-secondary">
+                {{ latest_analysis_job.finished_at.strftime("%Y-%m-%d %H:%M") if latest_analysis_job.finished_at else "En proceso" }}
+              </span>
+            </div>
+            <div class="small text-secondary mb-2">
+              Backend: {{ latest_analysis_job.analyzer_backend or "No definido" }}
+            </div>
+            {% if latest_analysis_job.status == "completed" %}
+              {% set analysis = latest_analysis_job.analysis_data %}
+              <div class="mb-3">
+                {% if analysis.get("family_classification") == "axial_turned_candidate" %}
+                  <span class="badge text-bg-success">Clasificada como axial / torneada</span>
+                {% else %}
+                  <span class="badge text-bg-warning">Clasificacion axial no concluyente</span>
+                {% endif %}
+              </div>
+              <div class="metric-list">
+                <div class="metric-row">
+                  <span>Eje principal dominante</span>
+                  <strong>{{ analysis.get("dominant_axis", "-")|upper }}</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Dimension X</span>
+                  <strong>{{ analysis.get("dimensions", {}).get("x", "-") }}</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Dimension Y</span>
+                  <strong>{{ analysis.get("dimensions", {}).get("y", "-") }}</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Dimension Z</span>
+                  <strong>{{ analysis.get("dimensions", {}).get("z", "-") }}</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Relacion axial</span>
+                  <strong>{{ analysis.get("axial_ratio", "-") }}</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Similitud transversal</span>
+                  <strong>{{ analysis.get("transverse_similarity", "-") }}</strong>
+                </div>
+              </div>
+              <p class="small text-secondary mt-3 mb-0">
+                {{ analysis.get("classification_note", "Sin nota de clasificacion.") }}
+              </p>
+            {% else %}
+              <p class="text-secondary mb-0">
+                {{ latest_analysis_job.error_message or "No fue posible completar el analisis CAD de la pieza." }}
+              </p>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no se analizo la pieza para determinar si pertenece a la familia axial o torneada.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Estrategia de vistas</span>
+        <h2 class="h5 mt-2 mb-3">Layout axial preliminar</h2>
+        {% if project.uploaded_models %}
+          <form method="post" action="{{ url_for('projects.generate_axial_strategy', project_id=project.id) }}" class="mb-3">
+            <button class="btn btn-primary w-100" type="submit">Generar estrategia de vistas</button>
+          </form>
+        {% endif %}
+
+        {% if latest_strategy_job %}
+          <div class="upload-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <strong>Estado: {{ latest_strategy_job.status }}</strong>
+              <span class="small text-secondary">
+                {{ latest_strategy_job.finished_at.strftime("%Y-%m-%d %H:%M") if latest_strategy_job.finished_at else "En proceso" }}
+              </span>
+            </div>
+            {% if latest_strategy_job.status == "completed" %}
+              {% set strategy = latest_strategy_job.analysis_data %}
+              <div class="small text-secondary mb-3">
+                Layout: {{ strategy.get("layout_name", "Sin layout") }}
+              </div>
+              <div class="metric-list mb-3">
+                {% for view in strategy.get("views", []) %}
+                  <div class="metric-row">
+                    <span>{{ view.get("label", "Vista") }}</span>
+                    <strong>{{ view.get("key", "-") }}</strong>
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="small text-secondary mb-3">
+                {% for note in strategy.get("notes", []) %}
+                  <div>{{ note }}</div>
+                {% endfor %}
+              </div>
+              {% if strategy.get("svg_preview") %}
+                <div class="drawing-preview-frame">
+                  {{ strategy.get("svg_preview") | safe }}
+                </div>
+              {% endif %}
+            {% else %}
+              <p class="text-secondary mb-0">
+                {{ latest_strategy_job.error_message or "No fue posible construir la estrategia axial." }}
+              </p>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no se genero la estrategia de vista lateral, vista de extremo y corte longitudinal.
+          </p>
+        {% endif %}
       </div>
     </div>
 

@@ -1,6 +1,6 @@
 # Metal MVP
 
-Base para un MVP web orientado a metalurgica. Esta Fase 4 extiende la app Flask existente con carga y almacenamiento seguro de archivos STEP/IGES para piezas individuales.
+Base para un MVP web orientado a metalurgica. Esta Fase 5 extiende la app Flask existente con una capa base de integracion con FreeCAD para analizar un archivo STEP/IGES y extraer informacion geometrica basica de una pieza individual.
 
 ## Alcance actual
 
@@ -8,11 +8,11 @@ Base para un MVP web orientado a metalurgica. Esta Fase 4 extiende la app Flask 
 - Configuracion por entorno (`development`, `testing`, `production`)
 - Persistencia real con SQLAlchemy y SQLite
 - Dashboard y CRUD web de proyectos/piezas
-- Carga de archivos `.step`, `.stp`, `.iges` e `.igs`
-- Guardado seguro de archivos en `uploads/`
-- Registro de metadata en `UploadedModel`
-- Visualizacion y descarga del archivo asociado desde la UI
-- Manejo amigable de errores y mensajes flash
+- Carga segura de archivos `.step`, `.stp`, `.iges` e `.igs`
+- Analisis base de modelos desde el detalle del proyecto
+- Adaptador desacoplado para FreeCAD con fallback controlado
+- Registro del resultado del analisis en `DrawingJob`
+- Visualizacion del resultado basico o del error en la UI
 
 ## Modelos disponibles
 
@@ -22,25 +22,47 @@ Base para un MVP web orientado a metalurgica. Esta Fase 4 extiende la app Flask 
 - `ExportFile`
 - `Template`
 
-## Datos de gestion disponibles en Project
-
-- nombre de pieza
-- codigo de pieza
-- revision
-- observaciones
-- material opcional
-- autor opcional
-- template seleccionado opcional
-- estado
-
-## Flujo de upload actual
+## Flujo de analisis actual
 
 1. Crear una pieza desde la UI.
-2. Entrar al detalle del proyecto.
-3. Subir un archivo valido con extension `.step`, `.stp`, `.iges` o `.igs`.
-4. El archivo se guarda con nombre seguro dentro de `uploads/project_<id>/`.
-5. La metadata queda registrada en SQLite en `UploadedModel`.
-6. El archivo aparece listado en el detalle del proyecto con opcion de descarga.
+2. Subir un archivo valido STEP/IGES en el detalle del proyecto.
+3. Ejecutar `Analizar modelo` sobre el archivo asociado.
+4. Si FreeCAD esta disponible, se intenta importar el modelo.
+5. Se extraen bounding box, dimensiones globales aproximadas y escala tentativa.
+6. El resultado se guarda en `DrawingJob` y se muestra en la vista de detalle.
+
+## Configuracion de FreeCAD
+
+La app sigue funcionando aunque FreeCAD no este instalado. En ese caso:
+
+- el upload sigue operativo
+- el analisis queda en fallback controlado
+- el usuario ve un error amigable en la UI
+
+### Windows
+
+1. Instalar FreeCAD.
+2. Identificar la carpeta que contiene los modulos Python de FreeCAD. En Windows suele ser algo como:
+
+```text
+C:\Program Files\FreeCAD 0.21\bin
+```
+
+3. Configurar la variable de entorno:
+
+```powershell
+$env:FREECAD_LIB_PATH="C:\Program Files\FreeCAD 0.21\bin"
+```
+
+4. Reiniciar la terminal o VS Code si hace falta.
+5. Ejecutar:
+
+```bash
+python init_db.py
+python run.py
+```
+
+Si `FREECAD_LIB_PATH` no apunta a una instalacion valida, la app mostrara el fallback de error controlado.
 
 ## Estructura del proyecto
 
@@ -102,6 +124,7 @@ La app funciona sin archivo `.env`, pero se puede personalizar con:
 APP_ENV=development
 SECRET_KEY=dev-secret-key
 DATABASE_URL=sqlite:///metal.db
+FREECAD_LIB_PATH=C:\Program Files\FreeCAD 0.21\bin
 ```
 
 ## Testing
@@ -110,20 +133,21 @@ DATABASE_URL=sqlite:///metal.db
 pytest
 ```
 
-## Estado funcional de la Fase 4
+## Estado funcional de la Fase 5
 
 - Ya podes crear proyectos y subirles archivos STEP/IGES validos.
-- Los archivos quedan almacenados de forma segura en `uploads/`.
-- La metadata queda persistida en SQLite.
-- La vista de detalle muestra los archivos asociados y permite descargarlos.
-- Todavia no hay importacion real con FreeCAD.
-- Todavia no hay drawing generation, exportacion ni Ollama.
+- Ya podes intentar analizar un modelo desde el detalle del proyecto.
+- Si FreeCAD esta disponible, la app guarda dimensiones globales aproximadas y bounding box.
+- Si FreeCAD no esta disponible, la app registra un error amigable y mantiene el flujo operativo.
+- Todavia no hay layout final de drawing.
+- Todavia no hay TechDraw completo, exportacion ni Ollama.
 
 ## Como retomar si se interrumpe
 
 1. Revisar `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
 2. Activar `.venv`.
-3. Ejecutar `python init_db.py` para asegurar la base.
-4. Validar con `pytest`.
-5. Levantar la app con `python run.py`.
-6. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.
+3. Si queres analisis real, verificar `FREECAD_LIB_PATH`.
+4. Ejecutar `python init_db.py` para asegurar la base.
+5. Validar con `pytest`.
+6. Levantar la app con `python run.py`.
+7. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.

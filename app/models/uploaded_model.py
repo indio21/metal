@@ -14,6 +14,11 @@ class UploadedModel(TimestampMixin, db.Model):
     status = db.Column(db.String(32), nullable=False, default="pending_upload")
 
     project = db.relationship("Project", back_populates="uploaded_models")
+    drawing_jobs = db.relationship(
+        "DrawingJob",
+        back_populates="uploaded_model",
+        lazy="selectin",
+    )
 
     def __repr__(self) -> str:
         return f"<UploadedModel {self.original_filename or 'pending'}>"

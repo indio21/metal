@@ -30,11 +30,12 @@ def initialize_database() -> None:
 
 def synchronize_legacy_schema() -> None:
     inspector = inspect(db.engine)
-    if "projects" not in inspector.get_table_names():
+    table_names = set(inspector.get_table_names())
+    if "projects" not in table_names:
         return
 
-    project_columns = {column["name"] for column in inspector.get_columns("projects")}
     with db.engine.begin() as connection:
+        project_columns = {column["name"] for column in inspector.get_columns("projects")}
         if "updated_at" not in project_columns:
             connection.execute(text("ALTER TABLE projects ADD COLUMN updated_at DATETIME"))
             connection.execute(
@@ -47,6 +48,14 @@ def synchronize_legacy_schema() -> None:
             connection.execute(text("ALTER TABLE projects ADD COLUMN author VARCHAR(120)"))
         if "template_id" not in project_columns:
             connection.execute(text("ALTER TABLE projects ADD COLUMN template_id INTEGER"))
+        if "drawing_jobs" in table_names:
+            drawing_job_columns = {column["name"] for column in inspector.get_columns("drawing_jobs")}
+            if "uploaded_model_id" not in drawing_job_columns:
+                connection.execute(text("ALTER TABLE drawing_jobs ADD COLUMN uploaded_model_id INTEGER"))
+            if "analyzer_backend" not in drawing_job_columns:
+                connection.execute(text("ALTER TABLE drawing_jobs ADD COLUMN analyzer_backend VARCHAR(64)"))
+            if "analysis_summary" not in drawing_job_columns:
+                connection.execute(text("ALTER TABLE drawing_jobs ADD COLUMN analysis_summary TEXT"))
 
 
 def seed_templates() -> None:

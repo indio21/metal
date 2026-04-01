@@ -2,8 +2,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, url_for
 
+from app.cad.cad_import_service import analyze_project_model
 from app.extensions import db
-from app.models import Project, UploadedModel
+from app.models import DrawingJob, Project, UploadedModel
 from app.services.project_service import (
     PROJECT_STATUS_OPTIONS,
     build_project_form_data,
@@ -65,7 +66,16 @@ def new_project():
 @projects_bp.get("/<int:project_id>")
 def detail(project_id: int):
     project = db.get_or_404(Project, project_id)
-    return render_template("projects/detail.html", project=project)
+    latest_analysis_job = (
+        DrawingJob.query.filter_by(project_id=project.id, output_type="model_analysis")
+        .order_by(DrawingJob.created_at.desc())
+        .first()
+    )
+    return render_template(
+        "projects/detail.html",
+        project=project,
+        latest_analysis_job=latest_analysis_job,
+    )
 
 
 @projects_bp.post("/<int:project_id>/upload-model")
@@ -89,6 +99,47 @@ def upload_model(project_id: int):
         flash("No se pudo registrar el archivo en la base de datos.", "danger")
     else:
         flash("Archivo CAD asociado correctamente al proyecto.", "success")
+
+    return redirect(url_for("projects.detail", project_id=project.id))
+
+
+@projects_bp.post("/<int:project_id>/analyze-model")
+def analyze_model(project_id: int):
+    project = db.get_or_404(Project, project_id)
+    model_id = request.form.get("model_id", type=int)
+
+    if model_id:
+        uploaded_model = db.get_or_404(UploadedModel, model_id)
+        if uploaded_model.project_id != project.id:
+            flash("El archivo seleccionado no pertenece a este proyecto.", "danger")
+            return redirect(url_for("projects.detail", project_id=project.id))
+    else:
+        uploaded_model = (
+            UploadedModel.query.filter_by(project_id=project.id)
+            .order_by(UploadedModel.created_at.desc())
+            .first()
+        )
+
+    if uploaded_model is None:
+        flash("No hay ningun modelo STEP o IGES disponible para analizar.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    try:
+        drawing_job = analyze_project_model(
+            project=project,
+            uploaded_model=uploaded_model,
+            upload_root=current_app.config["UPLOAD_FOLDER"],
+            freecad_lib_path=current_app.config.get("FREECAD_LIB_PATH"),
+        )
+    except SQLAlchemyError:
+        rollback_session()
+        flash("No se pudo registrar el analisis del modelo.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    if drawing_job.status == "completed":
+        flash("Analisis del modelo completado correctamente.", "success")
+    else:
+        flash("El analisis del modelo no pudo completarse.", "warning")
 
     return redirect(url_for("projects.detail", project_id=project.id))
 

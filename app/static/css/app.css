@@ -142,6 +142,10 @@ body.app-shell {
   border-radius: 0.9rem;
 }
 
+.upload-item form {
+  margin: 0;
+}
+
 .metric-list {
   display: grid;
   gap: 0.75rem;

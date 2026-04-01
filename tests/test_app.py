@@ -3,7 +3,7 @@ from pathlib import Path
 import shutil
 
 from app import create_app
-from app.models import Project, Template, UploadedModel
+from app.models import DrawingJob, Project, Template, UploadedModel
 
 
 def reset_test_upload_dirs(app):
@@ -241,3 +241,113 @@ def test_download_uploaded_model_returns_file():
 
     assert response.status_code == 200
     assert response.data == b"iges-data"
+
+
+def test_analyze_uploaded_model_success(monkeypatch):
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza analizada", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"step-data"), "pieza.step")},
+        content_type="multipart/form-data",
+    )
+
+    def fake_analyze_model(self, file_path):
+        from app.cad.cad_import_service import CADAnalysisResult
+
+        return CADAnalysisResult(
+            backend="FreeCAD",
+            bounding_box={
+                "xmin": 0.0,
+                "ymin": 0.0,
+                "zmin": 0.0,
+                "xmax": 120.0,
+                "ymax": 45.0,
+                "zmax": 30.0,
+            },
+            dimensions={"x": 120.0, "y": 45.0, "z": 30.0},
+            tentative_scale_factor=1.0,
+            tentative_scale_note="Escala base del archivo.",
+        )
+
+    monkeypatch.setattr(
+        "app.cad.cad_import_service.FreeCADAdapter.analyze_model",
+        fake_analyze_model,
+    )
+
+    with app.app_context():
+        uploaded_model = UploadedModel.query.filter_by(project_id=project_id).first()
+        model_id = uploaded_model.id
+
+    response = client.post(
+        f"/projects/{project_id}/analyze-model",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Analisis del modelo completado correctamente." in response.data
+    assert b"Dimension X" in response.data
+    assert b"120.0" in response.data
+
+    with app.app_context():
+        drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
+        project = app.extensions["sqlalchemy"].session.get(Project, project_id)
+        assert drawing_job is not None
+        assert drawing_job.status == "completed"
+        assert project.status == "ready"
+
+
+def test_analyze_uploaded_model_handles_freecad_unavailable(monkeypatch):
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza sin FreeCAD", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"iges-data"), "pieza.iges")},
+        content_type="multipart/form-data",
+    )
+
+    from app.cad.cad_import_service import FreeCADUnavailableError
+
+    def fake_fail(self, file_path):
+        raise FreeCADUnavailableError("FreeCAD no esta disponible en este entorno.")
+
+    monkeypatch.setattr(
+        "app.cad.cad_import_service.FreeCADAdapter.analyze_model",
+        fake_fail,
+    )
+
+    with app.app_context():
+        uploaded_model = UploadedModel.query.filter_by(project_id=project_id).first()
+        model_id = uploaded_model.id
+
+    response = client.post(
+        f"/projects/{project_id}/analyze-model",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"no pudo completarse" in response.data
+    assert b"FreeCAD no esta disponible en este entorno." in response.data
+
+    with app.app_context():
+        drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
+        assert drawing_job is not None
+        assert drawing_job.status == "failed"

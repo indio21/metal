@@ -14,6 +14,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     UPLOAD_FOLDER = BASE_DIR / "uploads"
     EXPORT_FOLDER = BASE_DIR / "exports"
+    FREECAD_LIB_PATH = os.getenv("FREECAD_LIB_PATH")
 
 
 class DevelopmentConfig(Config):

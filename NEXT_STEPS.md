@@ -7,6 +7,7 @@ El MVP base quedo navegable y retomable:
 - gestion de proyectos/piezas
 - carga STEP/IGES
 - analisis CAD base con fallback controlado
+- analisis CAD con identificacion visible entre FreeCAD real y modo demo de la app
 - drawing preliminar 2D
 - preview SVG
 - exportacion PDF/DXF

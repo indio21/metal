@@ -12,3 +12,7 @@ Thumbs.db
 Desktop.ini
 test_uploads/
 test_exports/
+uploads/*
+!uploads/.gitkeep
+exports/*
+!exports/.gitkeep

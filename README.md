@@ -103,8 +103,10 @@ FreeCAD sigue siendo opcional. Si no esta instalado:
 
 - la app sigue levantando
 - el upload sigue funcionando
-- el analisis muestra fallback controlado si no puede ejecutarse
+- el analisis usa un modo demo con dimensiones estimadas para no bloquear el flujo
 - el drawing usa arquitectura equivalente con preview SVG
+- la exportacion PDF/DXF sigue disponible
+- la UI indica si el analisis fue hecho con FreeCAD o con el fallback interno de la app
 
 ### Windows
 
@@ -124,7 +126,7 @@ python init_db.py
 python run.py
 ```
 
-Si `FREECAD_LIB_PATH` no apunta a una instalacion valida, la app usa su fallback controlado y mantiene el flujo navegable.
+Si `FREECAD_LIB_PATH` no apunta a una instalacion valida, la app usa un fallback demo y mantiene el flujo navegable.
 
 ## Configuracion de Ollama
 
@@ -189,6 +191,7 @@ Cobertura actual basica:
 - No implementa BOM ni balloons.
 - No promete acotado universal ni layout final perfecto.
 - La integracion profunda con FreeCAD/TechDraw depende del entorno local.
+- Cuando FreeCAD no esta disponible, las dimensiones del analisis se estiman en modo demo para sostener la navegacion del MVP.
 - El drawing generado es preliminar y sirve como base operativa, no como plano definitivo universal.
 - Ollama es totalmente opcional.
 

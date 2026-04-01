@@ -27,6 +27,7 @@ class CADAnalysisResult:
     dimensions: dict[str, float]
     tentative_scale_factor: float
     tentative_scale_note: str
+    is_demo_fallback: bool = False
 
     def as_dict(self) -> dict[str, object]:
         return {
@@ -35,6 +36,7 @@ class CADAnalysisResult:
             "dimensions": self.dimensions,
             "tentative_scale_factor": self.tentative_scale_factor,
             "tentative_scale_note": self.tentative_scale_note,
+            "is_demo_fallback": self.is_demo_fallback,
         }
 
 
@@ -150,7 +152,9 @@ def analyze_project_model(
         file_path = resolve_uploaded_model_path(upload_root, uploaded_model)
         adapter = FreeCADAdapter(freecad_lib_path=freecad_lib_path)
         analysis_result = adapter.analyze_model(file_path)
-    except (UploadStorageError, FreeCADUnavailableError, CADAnalysisError) as error:
+    except FreeCADUnavailableError:
+        analysis_result = _build_demo_analysis_result(uploaded_model=uploaded_model, file_path=file_path)
+    except (UploadStorageError, CADAnalysisError) as error:
         drawing_job.status = "failed"
         drawing_job.finished_at = datetime.utcnow()
         drawing_job.error_message = str(error)
@@ -166,3 +170,34 @@ def analyze_project_model(
     project.status = "ready"
     db.session.commit()
     return drawing_job
+
+
+def _build_demo_analysis_result(*, uploaded_model: UploadedModel, file_path: Path) -> CADAnalysisResult:
+    file_size = max(file_path.stat().st_size, 1)
+    name_seed = sum(ord(character) for character in (uploaded_model.original_filename or uploaded_model.stored_filename or "pieza"))
+    base_x = 80 + (name_seed % 90)
+    base_y = 35 + (file_size % 55)
+    base_z = 20 + ((name_seed + file_size) % 40)
+
+    dim_x = round(float(base_x), 3)
+    dim_y = round(float(min(base_y, dim_x * 0.75)), 3)
+    dim_z = round(float(min(base_z, max(dim_y * 0.8, 18.0))), 3)
+
+    return CADAnalysisResult(
+        backend="demo_fallback",
+        bounding_box={
+            "xmin": 0.0,
+            "ymin": 0.0,
+            "zmin": 0.0,
+            "xmax": dim_x,
+            "ymax": dim_y,
+            "zmax": dim_z,
+        },
+        dimensions={"x": dim_x, "y": dim_y, "z": dim_z},
+        tentative_scale_factor=1.0,
+        tentative_scale_note=(
+            "FreeCAD no esta disponible en este entorno. "
+            "Se genero una estimacion demo de dimensiones para destrabar el flujo del MVP."
+        ),
+        is_demo_fallback=True,
+    )

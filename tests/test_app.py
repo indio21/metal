@@ -352,7 +352,7 @@ def test_analyze_uploaded_model_success(monkeypatch):
         assert project.status == "ready"
 
 
-def test_analyze_uploaded_model_handles_freecad_unavailable(monkeypatch):
+def test_analyze_uploaded_model_uses_demo_fallback_when_freecad_is_unavailable(monkeypatch):
     app = create_app("testing")
     reset_test_upload_dirs(app)
 
@@ -390,13 +390,88 @@ def test_analyze_uploaded_model_handles_freecad_unavailable(monkeypatch):
     )
 
     assert response.status_code == 200
-    assert b"no pudo completarse" in response.data
-    assert b"FreeCAD no esta disponible en este entorno." in response.data
+    assert b"Analisis completado en modo demo" in response.data
+    assert b"demo_fallback" in response.data
+    assert b"Se genero una estimacion demo de dimensiones" in response.data
+    assert b"Analisis hecho por la app en modo demo" in response.data
 
     with app.app_context():
         drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
         assert drawing_job is not None
-        assert drawing_job.status == "failed"
+        assert drawing_job.status == "completed"
+        assert drawing_job.analyzer_backend == "demo_fallback"
+        assert drawing_job.analysis_data.get("is_demo_fallback") is True
+
+
+def test_full_flow_generates_dxf_without_freecad(monkeypatch):
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza demo DXF", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"step-demo-data"), "demo.step")},
+        content_type="multipart/form-data",
+    )
+
+    from app.cad.cad_import_service import FreeCADUnavailableError
+
+    def fake_fail(self, file_path):
+        raise FreeCADUnavailableError("FreeCAD no esta disponible en este entorno.")
+
+    monkeypatch.setattr(
+        "app.cad.cad_import_service.FreeCADAdapter.analyze_model",
+        fake_fail,
+    )
+
+    with app.app_context():
+        uploaded_model = UploadedModel.query.filter_by(project_id=project_id).first()
+        model_id = uploaded_model.id
+
+    analyze_response = client.post(
+        f"/projects/{project_id}/analyze-model",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+    assert analyze_response.status_code == 200
+    assert b"Analisis completado en modo demo" in analyze_response.data
+
+    drawing_response = client.post(
+        f"/projects/{project_id}/generate-drawing",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+    assert drawing_response.status_code == 200
+    assert b"Drawing preliminar generado correctamente." in drawing_response.data
+
+    with app.app_context():
+        drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="preliminary_2d").first()
+        assert drawing_job is not None
+        drawing_job_id = drawing_job.id
+
+    export_response = client.post(
+        f"/projects/{project_id}/drawings/{drawing_job_id}/export",
+        data={"export_format": "dxf"},
+        follow_redirects=True,
+    )
+    assert export_response.status_code == 200
+    assert b"Exportacion DXF generada correctamente." in export_response.data
+
+    with app.app_context():
+        export_file = ExportFile.query.filter_by(
+            project_id=project_id,
+            drawing_job_id=drawing_job_id,
+            file_format="dxf",
+        ).first()
+        assert export_file is not None
+        export_path = Path(app.config["EXPORT_FOLDER"]) / export_file.file_path
+        assert export_path.exists()
 
 
 def test_generate_preliminary_drawing_creates_svg_preview():

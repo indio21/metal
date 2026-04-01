@@ -159,7 +159,13 @@ def analyze_model(project_id: int):
         return redirect(url_for("projects.detail", project_id=project.id))
 
     if drawing_job.status == "completed":
-        flash("Analisis del modelo completado correctamente.", "success")
+        if drawing_job.analysis_data.get("is_demo_fallback"):
+            flash(
+                "Analisis completado en modo demo. Se estimaron dimensiones basicas para continuar sin FreeCAD.",
+                "warning",
+            )
+        else:
+            flash("Analisis del modelo completado correctamente.", "success")
     else:
         flash("El analisis del modelo no pudo completarse.", "warning")
 

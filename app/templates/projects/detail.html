@@ -151,6 +151,13 @@
 
             {% if latest_analysis_job.status == "completed" %}
               {% set analysis = latest_analysis_job.analysis_data %}
+              <div class="mb-3">
+                {% if analysis.get("is_demo_fallback") %}
+                  <span class="badge text-bg-warning">Analisis hecho por la app en modo demo</span>
+                {% else %}
+                  <span class="badge text-bg-success">Analisis hecho con FreeCAD</span>
+                {% endif %}
+              </div>
               <div class="metric-list">
                 <div class="metric-row">
                   <span>Dimension X</span>
@@ -171,6 +178,13 @@
               </div>
               <p class="small text-secondary mt-3 mb-0">
                 {{ analysis.get("tentative_scale_note", "Sin nota de escala.") }}
+              </p>
+              <p class="small text-secondary mt-2 mb-0">
+                {% if analysis.get("is_demo_fallback") %}
+                  El flujo siguio sin FreeCAD usando una estimacion interna de la app para destrabar el MVP.
+                {% else %}
+                  Las dimensiones provienen del analisis real del modelo cargado con FreeCAD.
+                {% endif %}
               </p>
             {% else %}
               <p class="text-secondary mb-0">

@@ -88,6 +88,11 @@
         <p class="small text-secondary mt-3 mb-0">
           Estos contadores quedan listos para activarse cuando agreguemos uploads y generacion de drawing.
         </p>
+        {% if project.uploaded_models %}
+          <form method="post" action="{{ url_for('projects.generate_drawing', project_id=project.id) }}" class="mt-3">
+            <button class="btn btn-primary w-100" type="submit">Generar drawing</button>
+          </form>
+        {% endif %}
       </div>
     </div>
 
@@ -176,6 +181,58 @@
         {% else %}
           <p class="text-secondary mb-0">
             Todavia no se ejecuto ningun analisis de modelo para esta pieza.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Drawing preliminar</span>
+        <h2 class="h5 mt-2 mb-3">Hoja 2D generada</h2>
+        {% if latest_drawing_job %}
+          <div class="upload-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <strong>Estado: {{ latest_drawing_job.status }}</strong>
+              <span class="small text-secondary">
+                {{ latest_drawing_job.finished_at.strftime("%Y-%m-%d %H:%M") if latest_drawing_job.finished_at else "En proceso" }}
+              </span>
+            </div>
+            <div class="small text-secondary mb-2">
+              Backend: {{ latest_drawing_job.analyzer_backend or "No definido" }}
+            </div>
+            {% if latest_drawing_job.status == "completed" %}
+              {% set drawing = latest_drawing_job.analysis_data %}
+              <div class="small text-secondary mb-2">
+                Template: {{ drawing.get("template_name", "Sin template") }}
+              </div>
+              <div class="small text-secondary mb-3">
+                Escala: {{ drawing.get("scale_label", "Sin escala") }}
+              </div>
+              {% set preview = latest_drawing_job.export_files|selectattr('file_format', 'equalto', 'svg')|list|first %}
+              {% if preview %}
+                <a class="btn btn-sm btn-outline-dark mb-3" href="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=preview.id) }}" target="_blank">
+                  Abrir preview
+                </a>
+                <div class="drawing-preview-frame">
+                  <object
+                    data="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=preview.id) }}"
+                    type="image/svg+xml"
+                    class="drawing-preview-object"
+                  >
+                    Preview no disponible en este navegador.
+                  </object>
+                </div>
+              {% endif %}
+            {% else %}
+              <p class="text-secondary mb-0">
+                {{ latest_drawing_job.error_message or "No fue posible generar el drawing preliminar." }}
+              </p>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no se genero ningun drawing preliminar para esta pieza.
           </p>
         {% endif %}
       </div>

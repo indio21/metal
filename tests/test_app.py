@@ -1,9 +1,10 @@
 from io import BytesIO
+import json
 from pathlib import Path
 import shutil
 
 from app import create_app
-from app.models import DrawingJob, Project, Template, UploadedModel
+from app.models import DrawingJob, ExportFile, Project, Template, UploadedModel
 
 
 def reset_test_upload_dirs(app):
@@ -351,3 +352,115 @@ def test_analyze_uploaded_model_handles_freecad_unavailable(monkeypatch):
         drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="model_analysis").first()
         assert drawing_job is not None
         assert drawing_job.status == "failed"
+
+
+def test_generate_preliminary_drawing_creates_svg_preview():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza drawing", revision="A", status="ready")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        uploaded_model = UploadedModel(
+            project_id=project.id,
+            original_filename="pieza.step",
+            stored_filename="pieza.step",
+            file_format="step",
+            storage_path=f"project_{project.id}/pieza.step",
+            status="uploaded",
+        )
+        app.extensions["sqlalchemy"].session.add(uploaded_model)
+        app.extensions["sqlalchemy"].session.commit()
+        upload_path = Path(app.config["UPLOAD_FOLDER"]) / uploaded_model.storage_path
+        upload_path.parent.mkdir(parents=True, exist_ok=True)
+        upload_path.write_bytes(b"step-data")
+        analysis_job = DrawingJob(
+            project_id=project.id,
+            uploaded_model_id=uploaded_model.id,
+            status="completed",
+            output_type="model_analysis",
+            analyzer_backend="FreeCAD",
+            analysis_summary=json.dumps(
+                {
+                    "backend": "FreeCAD",
+                    "bounding_box": {
+                        "xmin": 0.0,
+                        "ymin": 0.0,
+                        "zmin": 0.0,
+                        "xmax": 140.0,
+                        "ymax": 60.0,
+                        "zmax": 35.0,
+                    },
+                    "dimensions": {"x": 140.0, "y": 60.0, "z": 35.0},
+                    "tentative_scale_factor": 1.0,
+                    "tentative_scale_note": "Escala base del archivo.",
+                }
+            ),
+        )
+        app.extensions["sqlalchemy"].session.add(analysis_job)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+        model_id = uploaded_model.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/generate-drawing",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Drawing preliminar generado correctamente." in response.data
+    assert b"Hoja 2D generada" in response.data
+    assert b"Abrir preview" in response.data
+
+    with app.app_context():
+        drawing_job = DrawingJob.query.filter_by(project_id=project_id, output_type="preliminary_2d").first()
+        assert drawing_job is not None
+        assert drawing_job.status == "completed"
+        export_file = ExportFile.query.filter_by(drawing_job_id=drawing_job.id, file_format="svg").first()
+        assert export_file is not None
+        preview_path = Path(app.config["EXPORT_FOLDER"]) / export_file.file_path
+        assert preview_path.exists()
+        assert "<svg" in preview_path.read_text(encoding="utf-8")
+
+
+def test_preview_generated_drawing_returns_svg():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza preview", revision="A", status="ready")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        drawing_job = DrawingJob(
+            project_id=project.id,
+            status="completed",
+            output_type="preliminary_2d",
+            analyzer_backend="svg_fallback",
+            analysis_summary=json.dumps({"scale_label": "1:1", "template_name": "Industrial basico A4"}),
+        )
+        app.extensions["sqlalchemy"].session.add(drawing_job)
+        app.extensions["sqlalchemy"].session.commit()
+        export_file = ExportFile(
+            project_id=project.id,
+            drawing_job_id=drawing_job.id,
+            filename="preview.svg",
+            file_format="svg",
+            file_path=f"project_{project.id}/preview.svg",
+            status="generated",
+        )
+        app.extensions["sqlalchemy"].session.add(export_file)
+        app.extensions["sqlalchemy"].session.commit()
+        preview_path = Path(app.config["EXPORT_FOLDER"]) / export_file.file_path
+        preview_path.parent.mkdir(parents=True, exist_ok=True)
+        preview_path.write_text("<svg xmlns='http://www.w3.org/2000/svg'></svg>", encoding="utf-8")
+        project_id = project.id
+        export_id = export_file.id
+
+    client = app.test_client()
+    response = client.get(f"/projects/{project_id}/drawings/{export_id}/preview")
+
+    assert response.status_code == 200
+    assert response.mimetype == "image/svg+xml"

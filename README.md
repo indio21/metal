@@ -1,6 +1,6 @@
 # Metal MVP
 
-Base para un MVP web orientado a metalurgica. Esta Fase 5 extiende la app Flask existente con una capa base de integracion con FreeCAD para analizar un archivo STEP/IGES y extraer informacion geometrica basica de una pieza individual.
+Base para un MVP web orientado a metalurgica. Esta Fase 6 extiende la app Flask existente con generacion de drawing preliminar 2D para piezas individuales, usando arquitectura equivalente a TechDraw con fallback SVG controlado.
 
 ## Alcance actual
 
@@ -10,9 +10,10 @@ Base para un MVP web orientado a metalurgica. Esta Fase 5 extiende la app Flask 
 - Dashboard y CRUD web de proyectos/piezas
 - Carga segura de archivos `.step`, `.stp`, `.iges` e `.igs`
 - Analisis base de modelos desde el detalle del proyecto
-- Adaptador desacoplado para FreeCAD con fallback controlado
-- Registro del resultado del analisis en `DrawingJob`
-- Visualizacion del resultado basico o del error en la UI
+- Generacion de drawing preliminar 2D desde la UI
+- Arquitectura base tipo TechDraw con fallback SVG controlado
+- Registro del drawing en `DrawingJob` y `ExportFile`
+- Preview SVG basico del plano generado
 
 ## Modelos disponibles
 
@@ -22,14 +23,15 @@ Base para un MVP web orientado a metalurgica. Esta Fase 5 extiende la app Flask 
 - `ExportFile`
 - `Template`
 
-## Flujo de analisis actual
+## Flujo de drawing actual
 
 1. Crear una pieza desde la UI.
 2. Subir un archivo valido STEP/IGES en el detalle del proyecto.
 3. Ejecutar `Analizar modelo` sobre el archivo asociado.
-4. Si FreeCAD esta disponible, se intenta importar el modelo.
-5. Se extraen bounding box, dimensiones globales aproximadas y escala tentativa.
-6. El resultado se guarda en `DrawingJob` y se muestra en la vista de detalle.
+4. Ejecutar `Generar drawing`.
+5. Si el entorno dispone de FreeCAD/TechDraw, la arquitectura queda preparada para usarlo.
+6. Si no esta disponible, se genera una hoja SVG preliminar equivalente usando el analisis previo.
+7. El resultado se guarda en `DrawingJob` y `ExportFile`, y se muestra en el detalle.
 
 ## Configuracion de FreeCAD
 
@@ -37,6 +39,7 @@ La app sigue funcionando aunque FreeCAD no este instalado. En ese caso:
 
 - el upload sigue operativo
 - el analisis queda en fallback controlado
+- la generacion de drawing usa el generador SVG preliminar
 - el usuario ve un error amigable en la UI
 
 ### Windows
@@ -133,20 +136,21 @@ FREECAD_LIB_PATH=C:\Program Files\FreeCAD 0.21\bin
 pytest
 ```
 
-## Estado funcional de la Fase 5
+## Estado funcional de la Fase 6
 
 - Ya podes crear proyectos y subirles archivos STEP/IGES validos.
 - Ya podes intentar analizar un modelo desde el detalle del proyecto.
-- Si FreeCAD esta disponible, la app guarda dimensiones globales aproximadas y bounding box.
-- Si FreeCAD no esta disponible, la app registra un error amigable y mantiene el flujo operativo.
-- Todavia no hay layout final de drawing.
-- Todavia no hay TechDraw completo, exportacion ni Ollama.
+- Ya podes generar un drawing preliminar 2D desde el detalle del proyecto.
+- El preview basico queda persistido como SVG y asociado al proyecto.
+- Si FreeCAD esta disponible, la arquitectura queda lista para integrarlo de forma mas profunda.
+- Si FreeCAD o TechDraw no estan disponibles, la app usa un fallback SVG controlado y mantiene el flujo operativo.
+- Todavia no hay exportacion final completa ni Ollama.
 
 ## Como retomar si se interrumpe
 
 1. Revisar `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
 2. Activar `.venv`.
-3. Si queres analisis real, verificar `FREECAD_LIB_PATH`.
+3. Si queres analisis/drawing con FreeCAD, verificar `FREECAD_LIB_PATH`.
 4. Ejecutar `python init_db.py` para asegurar la base.
 5. Validar con `pytest`.
 6. Levantar la app con `python run.py`.

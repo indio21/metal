@@ -146,6 +146,22 @@ body.app-shell {
   margin: 0;
 }
 
+.drawing-preview-frame {
+  width: 100%;
+  min-height: 340px;
+  border: 1px solid var(--metal-border);
+  border-radius: 0.9rem;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.drawing-preview-object {
+  width: 100%;
+  min-height: 340px;
+  display: block;
+  background: #fff;
+}
+
 .metric-list {
   display: grid;
   gap: 0.75rem;

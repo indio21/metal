@@ -23,7 +23,8 @@ def get_project_dashboard_data() -> dict[str, object]:
     ready_count = Project.query.filter_by(status="ready").count()
     assigned_template_count = Project.query.filter(Project.template_id.isnot(None)).count()
     uploaded_model_count = UploadedModel.query.count()
-    completed_drawings = DrawingJob.query.filter_by(output_type="preliminary_2d", status="completed").count()
+    completed_drawings = DrawingJob.query.filter_by(output_type="axial_sheet", status="completed").count()
+    completed_strategies = DrawingJob.query.filter_by(output_type="axial_strategy", status="completed").count()
     generated_exports = ExportFile.query.filter_by(status="generated").count()
     latest_update = db.session.query(func.max(Project.updated_at)).scalar()
     recent_projects = Project.query.order_by(Project.updated_at.desc()).limit(6).all()
@@ -36,6 +37,7 @@ def get_project_dashboard_data() -> dict[str, object]:
         "assigned_template_count": assigned_template_count,
         "uploaded_model_count": uploaded_model_count,
         "completed_drawings": completed_drawings,
+        "completed_strategies": completed_strategies,
         "generated_exports": generated_exports,
         "latest_update": latest_update,
         "recent_projects": recent_projects,

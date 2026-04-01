@@ -119,6 +119,7 @@ def test_dashboard_route():
 
     assert response.status_code == 200
     assert b"Metal MVP" in response.data
+    assert b"MVP cerrado" in response.data
 
 
 def test_projects_index_route():
@@ -916,6 +917,28 @@ def test_ai_assist_fallback_when_ollama_disabled():
     assert b"Asistencia local mostrada porque Ollama no esta disponible." in response.data
 
 
+def test_ai_assist_title_block_gaps_fallback():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Eje sin cajetin", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/ai-assist",
+        data={"assistant_action": "title_block_gaps"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Faltantes cajetin" in response.data
+    assert b"cajetin" in response.data.lower()
+
+
 def test_ai_assist_uses_mocked_ollama_response(monkeypatch):
     app = create_app("testing")
     reset_test_upload_dirs(app)
@@ -944,3 +967,48 @@ def test_ai_assist_uses_mocked_ollama_response(monkeypatch):
 
     assert response.status_code == 200
     assert b"Asistencia IA generada correctamente." in response.data
+
+
+def test_ai_assist_explain_output_uses_axial_sheet_context():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Eje explicado", revision="B", status="ready", author="Equipo CAD")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        sheet_job = DrawingJob(
+            project_id=project.id,
+            status="completed",
+            output_type="axial_sheet",
+            analyzer_backend="axial_template_service",
+            analysis_summary=json.dumps(
+                {
+                    "sheet_type": "axial_turned_sheet",
+                    "scale_label": "1:1",
+                    "views": [
+                        {"label": "Vista lateral principal"},
+                        {"label": "Vista de extremo"},
+                        {"label": "Corte longitudinal"},
+                    ],
+                    "dimension_plan": {
+                        "overall_length": 180.0,
+                        "outer_diameter": 54.0,
+                    },
+                }
+            ),
+        )
+        app.extensions["sqlalchemy"].session.add(sheet_job)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/ai-assist",
+        data={"assistant_action": "explain_output"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"vista lateral principal" in response.data.lower()
+    assert b"corte longitudinal" in response.data.lower()

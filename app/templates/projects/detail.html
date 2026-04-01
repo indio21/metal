@@ -367,6 +367,57 @@
       </div>
     </div>
 
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Asistencia opcional</span>
+        <h2 class="h5 mt-2 mb-2">Ollama y ayuda local</h2>
+        <p class="small text-secondary mb-3">
+          {% if ollama_status.enabled %}
+            Ollama esta habilitado con el modelo <strong>{{ ollama_status.model }}</strong>.
+          {% else %}
+            Ollama esta deshabilitado o no disponible. La app sigue funcionando y usa ayuda local.
+          {% endif %}
+        </p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="technical_name">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Nombre tecnico</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="material_finish">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Material / tratamiento</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="title_block_gaps">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Faltantes cajetin</button>
+          </form>
+          <form method="post" action="{{ url_for('projects.ai_assist', project_id=project.id) }}">
+            <input type="hidden" name="assistant_action" value="explain_output">
+            <button class="btn btn-sm btn-outline-dark" type="submit">Explicar vistas</button>
+          </form>
+        </div>
+
+        {% if ai_result %}
+          <div class="upload-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <strong>{{ ai_result.title }}</strong>
+              <span class="badge {{ 'text-bg-warning' if ai_result.used_fallback else 'text-bg-success' }}">
+                {{ ai_result.backend }}
+              </span>
+            </div>
+            {% if ai_result.notice %}
+              <p class="small text-secondary mb-2">{{ ai_result.notice }}</p>
+            {% endif %}
+            <p class="mb-0">{{ ai_result.content }}</p>
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no pediste asistencia para esta pieza. Podes usarla para completar el nombre tecnico, revisar material o explicar el plano generado.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
     <div class="card shadow-sm">
       <div class="card-body">
         <span class="section-kicker">Acciones</span>

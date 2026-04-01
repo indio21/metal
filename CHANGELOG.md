@@ -2,6 +2,17 @@
 
 ## 2026-04-01
 
+- Se implemento de forma incremental la Fase 8 de la version 2.0 sobre el repositorio existente.
+- Se adapto `app/ai/ollama_service.py` al flujo axial 2.0 para asistencia opcional sobre:
+  - nombre tecnico
+  - material o tratamiento
+  - faltantes del cajetin
+  - explicacion de las vistas generadas
+- Se mantuvo fallback local cuando Ollama no esta disponible o esta deshabilitado.
+- Se incorporo la tarjeta de asistencia opcional en el detalle del proyecto para usar Ollama o ayuda local sin romper el flujo principal.
+- Se actualizo el dashboard para reflejar el estado final del MVP axial 2.0.
+- Se ampliaron los tests para cubrir asistencia opcional, fallback local y explicacion del plano axial generado.
+- Se actualizo README con instalacion final, variables de entorno, configuracion CAD, configuracion de Ollama, limitaciones reales y pasos sugeridos.
 - Se implementaron de forma incremental las Fases 6 y 7 de la version 2.0 sobre el repositorio existente.
 - Se agrego `app/drawing/dimensioning_service.py` para construir acotado basico especializado en piezas torneadas:
   - longitudes axiales

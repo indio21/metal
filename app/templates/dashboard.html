@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard | Metal MVP{% endblock %}
+{% block title %}Dashboard | Metal MVP 2.0{% endblock %}
 
 {% block content %}
 <section class="hero-card p-4 p-lg-5 mb-4">
   <div class="row align-items-center g-4">
     <div class="col-lg-7">
-      <span class="badge text-bg-light border mb-3">Version 2.0 - Fases 2 y 3</span>
-      <h1 class="display-6 fw-semibold mb-3">Persistencia y gestion de modelos para piezas axiales</h1>
+      <span class="badge text-bg-light border mb-3">Version 2.0 - MVP cerrado</span>
+      <h1 class="display-6 fw-semibold mb-3">Plano axial preliminar desde STEP o IGES</h1>
       <p class="lead text-secondary mb-4">
-        La base ya permite registrar proyecto y pieza, guardar datos tecnicos minimos y asociar archivos STEP o IGES
-        de forma segura, manteniendo a STEP como formato principal para la version axial 2.0.
+        El flujo actual ya permite crear una pieza axial, cargar STEP o IGES, analizar la geometria, construir una hoja tecnica
+        preliminar con tres vistas y exportarla en formatos vectoriales listos para retoque posterior.
       </p>
       <div class="d-flex flex-wrap gap-2">
         <a class="btn btn-primary" href="{{ url_for('projects.new_project') }}">Crear pieza</a>
@@ -32,7 +32,7 @@
           <strong class="stat-value">{{ assigned_template_count }}</strong>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Drawings completados</span>
+          <span class="stat-label">Hojas axiales completadas</span>
           <strong class="stat-value">{{ completed_drawings }}</strong>
         </div>
       </div>
@@ -45,7 +45,7 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <span class="section-kicker">Flujo</span>
-        <h2 class="h5 mt-2 mb-3">Estado del repositorio</h2>
+        <h2 class="h5 mt-2 mb-3">Estado del flujo</h2>
         <div class="metric-list">
           <div class="metric-row">
             <span>Borradores</span>
@@ -63,6 +63,10 @@
             <span>Modelos cargados</span>
             <strong>{{ uploaded_model_count }}</strong>
           </div>
+          <div class="metric-row">
+            <span>Estrategias generadas</span>
+            <strong>{{ completed_strategies }}</strong>
+          </div>
         </div>
       </div>
     </div>
@@ -71,9 +75,9 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <span class="section-kicker">Version 2.0</span>
-        <h2 class="h5 mt-2 mb-3">Persistencia axial</h2>
+        <h2 class="h5 mt-2 mb-3">MVP tecnico</h2>
         <p class="text-secondary mb-2">
-          La ficha ya contempla proyecto, pieza, descripcion, material, terminacion, revision y gestion del modelo 3D asociado.
+          La ficha ya contempla proyecto, pieza, material, terminacion, clasificacion axial, hoja tecnica y asistencia opcional con Ollama.
         </p>
         <p class="small text-secondary mb-0">
           Ultima actualizacion registrada:
@@ -85,11 +89,11 @@
   <div class="col-md-4">
     <div class="card shadow-sm h-100">
       <div class="card-body">
-        <span class="section-kicker">Siguiente construccion</span>
-        <h2 class="h5 mt-2 mb-3">Siguiente foco</h2>
+        <span class="section-kicker">Estado actual</span>
+        <h2 class="h5 mt-2 mb-3">Cierre de version 2.0</h2>
         <p class="text-secondary mb-3">
-          El siguiente paso sera detectar y clasificar la familia axial para construir la estrategia de drawing con
-          vista lateral, vista de extremo y corte longitudinal.
+          La version actual ya genera un plano axial preliminar con lateral principal, vista de extremo, corte longitudinal,
+          cajetin tecnico y exportaciones PDF, DXF y SVG.
         </p>
         <a class="btn btn-outline-dark btn-sm" href="{{ url_for('projects.index') }}">Ver proyectos activos</a>
       </div>
@@ -103,7 +107,7 @@
       <div>
         <span class="section-kicker">Actividad reciente</span>
         <h2 class="h5 mt-2 mb-1">Ultimos proyectos actualizados</h2>
-        <p class="text-secondary mb-0">Resumen rapido de proyectos y piezas ya cargados para continuar la version axial sin perder continuidad.</p>
+        <p class="text-secondary mb-0">Resumen rapido de proyectos y piezas ya cargados para seguir refinando el MVP axial sin perder continuidad.</p>
       </div>
       <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('projects.index') }}">Ir al listado completo</a>
     </div>

@@ -378,8 +378,11 @@ def export_drawing(project_id: int, drawing_job_id: int):
 def ai_assist(project_id: int):
     project = db.get_or_404(Project, project_id)
     action = (request.form.get("assistant_action") or "").strip()
-    latest_drawing_job = (
-        DrawingJob.query.filter_by(project_id=project.id, output_type="preliminary_2d")
+    latest_output_job = (
+        DrawingJob.query.filter(
+            DrawingJob.project_id == project.id,
+            DrawingJob.output_type.in_(["axial_sheet", "axial_strategy", "preliminary_2d"]),
+        )
         .order_by(DrawingJob.created_at.desc())
         .first()
     )
@@ -388,7 +391,7 @@ def ai_assist(project_id: int):
         project=project,
         action=action,
         config=current_app.config,
-        latest_drawing_job=latest_drawing_job,
+        latest_output_job=latest_output_job,
         export_history=export_history,
     )
     session[PROJECT_AI_RESULT_KEY] = {

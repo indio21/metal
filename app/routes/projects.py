@@ -1,9 +1,9 @@
 from sqlalchemy.exc import SQLAlchemyError
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, current_app, flash, redirect, render_template, request, send_file, url_for
 
 from app.extensions import db
-from app.models import Project
+from app.models import Project, UploadedModel
 from app.services.project_service import (
     PROJECT_STATUS_OPTIONS,
     build_project_form_data,
@@ -14,6 +14,12 @@ from app.services.project_service import (
     rollback_session,
     update_project,
     validate_project_form,
+)
+from app.services.upload_service import (
+    UploadStorageError,
+    UploadValidationError,
+    handle_model_upload,
+    resolve_uploaded_model_path,
 )
 
 projects_bp = Blueprint("projects", __name__, url_prefix="/projects")
@@ -60,6 +66,31 @@ def new_project():
 def detail(project_id: int):
     project = db.get_or_404(Project, project_id)
     return render_template("projects/detail.html", project=project)
+
+
+@projects_bp.post("/<int:project_id>/upload-model")
+def upload_model(project_id: int):
+    project = db.get_or_404(Project, project_id)
+    cad_file = request.files.get("cad_file")
+
+    try:
+        handle_model_upload(
+            project=project,
+            file_storage=cad_file,
+            upload_root=current_app.config["UPLOAD_FOLDER"],
+        )
+    except UploadValidationError as error:
+        flash(str(error), "danger")
+    except UploadStorageError as error:
+        rollback_session()
+        flash(str(error), "danger")
+    except SQLAlchemyError:
+        rollback_session()
+        flash("No se pudo registrar el archivo en la base de datos.", "danger")
+    else:
+        flash("Archivo CAD asociado correctamente al proyecto.", "success")
+
+    return redirect(url_for("projects.detail", project_id=project.id))
 
 
 @projects_bp.route("/<int:project_id>/edit", methods=["GET", "POST"])
@@ -110,3 +141,28 @@ def delete(project_id: int):
 
     flash(f'Proyecto "{project_name}" eliminado correctamente.', "success")
     return redirect(url_for("projects.index"))
+
+
+@projects_bp.get("/<int:project_id>/models/<int:model_id>/download")
+def download_model(project_id: int, model_id: int):
+    project = db.get_or_404(Project, project_id)
+    uploaded_model = db.get_or_404(UploadedModel, model_id)
+
+    if uploaded_model.project_id != project.id:
+        flash("El archivo solicitado no pertenece a este proyecto.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    try:
+        file_path = resolve_uploaded_model_path(
+            current_app.config["UPLOAD_FOLDER"],
+            uploaded_model,
+        )
+    except UploadStorageError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=uploaded_model.original_filename or uploaded_model.stored_filename,
+    )

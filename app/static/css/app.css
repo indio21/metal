@@ -130,6 +130,18 @@ body.app-shell {
   margin-top: 0.15rem;
 }
 
+.upload-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.upload-item {
+  padding: 0.95rem;
+  background: rgba(20, 33, 61, 0.03);
+  border: 1px solid var(--metal-border);
+  border-radius: 0.9rem;
+}
+
 .metric-list {
   display: grid;
   gap: 0.75rem;

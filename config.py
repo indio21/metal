@@ -27,6 +27,8 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    UPLOAD_FOLDER = BASE_DIR / "test_uploads"
+    EXPORT_FOLDER = BASE_DIR / "test_exports"
 
 
 class ProductionConfig(Config):

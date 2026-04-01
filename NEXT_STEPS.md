@@ -2,25 +2,24 @@
 
 ## Estado actual
 
-La Fase 3 quedo completa con una capa web de gestion mas seria para proyectos y piezas, incluyendo CRUD basico usable, dashboard mejorado y errores amigables.
+La Fase 4 quedo completa con carga y almacenamiento seguro de archivos STEP/IGES asociados a proyectos individuales.
 
 ## Siguiente fase exacta
 
-Continuar con la Fase 4 enfocandose en:
+Continuar con la Fase 5 enfocandose en:
 
-- carga controlada de archivos `STEP`, `STP`, `IGES` e `IGS`
-- validaciones de extension, nombre y tamano
-- almacenamiento fisico en `uploads/`
-- creacion real de registros `UploadedModel`
-- asociacion del archivo CAD al proyecto
-- mensajes de error claros para archivos no soportados
+- adaptador inicial para apertura del modelo con FreeCAD
+- deteccion controlada del entorno FreeCAD
+- lectura basica de metadata geométrica o del documento
+- stubs funcionales para analisis del modelo
+- mensajes de fallback claros cuando FreeCAD no este disponible
 
 ## Restricciones a respetar
 
-- No implementar todavia FreeCAD ni TechDraw.
-- No generar drawings 2D en esta fase.
+- No implementar todavia drawing generation completo.
 - No agregar exportacion PDF/DXF/SVG en esta fase.
 - Mantener Ollama como opcional y aun sin dependencia obligatoria.
+- Evitar asumir que FreeCAD estara instalado en todos los entornos.
 
 ## Como retomar el trabajo
 

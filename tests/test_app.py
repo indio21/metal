@@ -1,9 +1,22 @@
+from io import BytesIO
+from pathlib import Path
+import shutil
+
 from app import create_app
-from app.models import Project, Template
+from app.models import Project, Template, UploadedModel
+
+
+def reset_test_upload_dirs(app):
+    for folder_key in ("UPLOAD_FOLDER", "EXPORT_FOLDER"):
+        folder = Path(app.config[folder_key])
+        if folder.exists():
+            shutil.rmtree(folder)
+        folder.mkdir(parents=True, exist_ok=True)
 
 
 def test_dashboard_route():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
     client = app.test_client()
 
     response = client.get("/")
@@ -14,6 +27,7 @@ def test_dashboard_route():
 
 def test_projects_index_route():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
     client = app.test_client()
 
     response = client.get("/projects")
@@ -24,6 +38,7 @@ def test_projects_index_route():
 
 def test_new_project_route():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
     client = app.test_client()
 
     response = client.get("/projects/new")
@@ -34,6 +49,7 @@ def test_new_project_route():
 
 def test_create_project_persists_and_redirects_to_detail():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
     client = app.test_client()
 
     response = client.post(
@@ -65,6 +81,7 @@ def test_create_project_persists_and_redirects_to_detail():
 
 def test_default_template_is_seeded():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
 
     with app.app_context():
         template = Template.query.filter_by(code="industrial-a4").first()
@@ -73,6 +90,7 @@ def test_default_template_is_seeded():
 
 def test_edit_project_updates_fields():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
 
     with app.app_context():
         template = Template.query.filter_by(code="industrial-a4").first()
@@ -112,6 +130,7 @@ def test_edit_project_updates_fields():
 
 def test_delete_project_removes_record():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
 
     with app.app_context():
         project = Project(name="Eliminar pieza", revision="A", status="draft")
@@ -132,9 +151,93 @@ def test_delete_project_removes_record():
 
 def test_missing_project_shows_friendly_404():
     app = create_app("testing")
+    reset_test_upload_dirs(app)
     client = app.test_client()
 
     response = client.get("/projects/9999")
 
     assert response.status_code == 404
     assert b"No encontramos lo que buscabas" in response.data
+
+
+def test_upload_valid_step_file_persists_metadata_and_file():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza con CAD", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"dummy step data"), "pieza.step")},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Archivo CAD asociado correctamente al proyecto." in response.data
+    assert b"pieza.step" in response.data
+
+    with app.app_context():
+        uploaded_model = UploadedModel.query.filter_by(project_id=project_id).first()
+        assert uploaded_model is not None
+        assert uploaded_model.file_format == "step"
+        stored_path = Path(app.config["UPLOAD_FOLDER"]) / uploaded_model.storage_path
+        assert stored_path.exists()
+
+
+def test_upload_rejects_invalid_extension():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza invalida", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"dummy pdf"), "plano.pdf")},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Formato no soportado" in response.data
+
+    with app.app_context():
+        uploaded_models = UploadedModel.query.filter_by(project_id=project_id).all()
+        assert uploaded_models == []
+
+
+def test_download_uploaded_model_returns_file():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+
+    with app.app_context():
+        project = Project(name="Pieza descarga", revision="A", status="draft")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        project_id = project.id
+
+    client = app.test_client()
+    client.post(
+        f"/projects/{project_id}/upload-model",
+        data={"cad_file": (BytesIO(b"iges-data"), "pieza.iges")},
+        content_type="multipart/form-data",
+    )
+
+    with app.app_context():
+        uploaded_model = UploadedModel.query.filter_by(project_id=project_id).first()
+        model_id = uploaded_model.id
+
+    response = client.get(f"/projects/{project_id}/models/{model_id}/download")
+
+    assert response.status_code == 200
+    assert response.data == b"iges-data"

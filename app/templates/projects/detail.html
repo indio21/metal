@@ -52,6 +52,23 @@
   <div class="col-lg-4">
     <div class="card shadow-sm mb-4">
       <div class="card-body">
+        <span class="section-kicker">Modelo CAD</span>
+        <h2 class="h5 mt-2 mb-3">Subir STEP o IGES</h2>
+        <p class="small text-secondary mb-3">
+          Formatos aceptados: `.step`, `.stp`, `.iges`, `.igs`. Todavia no se procesa el modelo con FreeCAD.
+        </p>
+        <form method="post" action="{{ url_for('projects.upload_model', project_id=project.id) }}" enctype="multipart/form-data">
+          <div class="mb-3">
+            <label class="form-label" for="cad_file">Archivo de pieza</label>
+            <input class="form-control" id="cad_file" name="cad_file" type="file" accept=".step,.stp,.iges,.igs">
+          </div>
+          <button class="btn btn-primary w-100" type="submit">Subir archivo CAD</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
         <span class="section-kicker">Preparacion del MVP</span>
         <h2 class="h5 mt-2 mb-3">Estado del flujo</h2>
         <div class="stack-panel">
@@ -71,6 +88,33 @@
         <p class="small text-secondary mt-3 mb-0">
           Estos contadores quedan listos para activarse cuando agreguemos uploads y generacion de drawing.
         </p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Archivos asociados</span>
+        <h2 class="h5 mt-2 mb-3">Modelos cargados</h2>
+        {% if project.uploaded_models %}
+          <div class="upload-list">
+            {% for model in project.uploaded_models|sort(attribute='created_at', reverse=True) %}
+              <div class="upload-item">
+                <div class="fw-semibold text-break">{{ model.original_filename or model.stored_filename }}</div>
+                <div class="small text-secondary">
+                  {{ model.file_format|upper if model.file_format else "SIN FORMATO" }} · {{ model.created_at.strftime("%Y-%m-%d %H:%M") }}
+                </div>
+                <div class="small text-secondary text-break">{{ model.storage_path }}</div>
+                <a class="btn btn-sm btn-outline-dark mt-2" href="{{ url_for('projects.download_model', project_id=project.id, model_id=model.id) }}">
+                  Descargar
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no hay archivos STEP o IGES asociados a esta pieza.
+          </p>
+        {% endif %}
       </div>
     </div>
 

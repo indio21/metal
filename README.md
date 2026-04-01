@@ -1,17 +1,18 @@
 # Metal MVP
 
-Base para un MVP web orientado a metalurgica. Esta Fase 3 extiende la app Flask existente con una capa web de gestion mas completa para piezas y proyectos, lista para anexar uploads CAD en la siguiente iteracion.
+Base para un MVP web orientado a metalurgica. Esta Fase 4 extiende la app Flask existente con carga y almacenamiento seguro de archivos STEP/IGES para piezas individuales.
 
 ## Alcance actual
 
 - App Flask funcional con patron app factory
 - Configuracion por entorno (`development`, `testing`, `production`)
 - Persistencia real con SQLAlchemy y SQLite
-- Dashboard con metricas utiles
-- CRUD web basico de proyectos/piezas
-- Alta, listado, detalle, edicion y borrado controlado
-- Manejo amigable de errores 404 y 500
-- Templates base opcionales listos para seleccion
+- Dashboard y CRUD web de proyectos/piezas
+- Carga de archivos `.step`, `.stp`, `.iges` e `.igs`
+- Guardado seguro de archivos en `uploads/`
+- Registro de metadata en `UploadedModel`
+- Visualizacion y descarga del archivo asociado desde la UI
+- Manejo amigable de errores y mensajes flash
 
 ## Modelos disponibles
 
@@ -31,6 +32,15 @@ Base para un MVP web orientado a metalurgica. Esta Fase 3 extiende la app Flask 
 - autor opcional
 - template seleccionado opcional
 - estado
+
+## Flujo de upload actual
+
+1. Crear una pieza desde la UI.
+2. Entrar al detalle del proyecto.
+3. Subir un archivo valido con extension `.step`, `.stp`, `.iges` o `.igs`.
+4. El archivo se guarda con nombre seguro dentro de `uploads/project_<id>/`.
+5. La metadata queda registrada en SQLite en `UploadedModel`.
+6. El archivo aparece listado en el detalle del proyecto con opcion de descarga.
 
 ## Estructura del proyecto
 
@@ -100,14 +110,14 @@ DATABASE_URL=sqlite:///metal.db
 pytest
 ```
 
-## Estado funcional de la Fase 3
+## Estado funcional de la Fase 4
 
-- Ya podes crear, editar, listar, consultar y eliminar proyectos.
-- El dashboard muestra metricas utiles para el seguimiento del flujo.
-- La ficha de pieza ya maneja revision, autor y template base opcional.
-- Las pantallas de error son amigables y la navegacion es consistente.
-- Todavia no hay carga real de archivos STEP/IGES.
-- Todavia no hay integracion con FreeCAD, drawing, exportacion ni Ollama.
+- Ya podes crear proyectos y subirles archivos STEP/IGES validos.
+- Los archivos quedan almacenados de forma segura en `uploads/`.
+- La metadata queda persistida en SQLite.
+- La vista de detalle muestra los archivos asociados y permite descargarlos.
+- Todavia no hay importacion real con FreeCAD.
+- Todavia no hay drawing generation, exportacion ni Ollama.
 
 ## Como retomar si se interrumpe
 

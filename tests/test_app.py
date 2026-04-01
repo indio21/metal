@@ -15,6 +15,51 @@ def reset_test_upload_dirs(app):
         folder.mkdir(parents=True, exist_ok=True)
 
 
+def create_completed_drawing_job(app, *, project_name: str = "Pieza exportable") -> tuple[int, int]:
+    with app.app_context():
+        project = Project(name=project_name, revision="B", status="ready", author="Equipo CAD", material="Acero")
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        drawing_job = DrawingJob(
+            project_id=project.id,
+            status="completed",
+            output_type="preliminary_2d",
+            analyzer_backend="svg_fallback",
+            analysis_summary=json.dumps(
+                {
+                    "scale_label": "1:1",
+                    "template_name": "Industrial basico A4",
+                    "dimensions": {"x": 140.0, "y": 60.0, "z": 35.0},
+                    "title_block": {
+                        "Pieza": project.name,
+                        "Fecha": "2026-03-31",
+                        "Revision": project.revision,
+                        "Autor": project.author,
+                        "Material": project.material,
+                        "Escala": "1:1",
+                        "Observaciones": "Sin observaciones",
+                    },
+                }
+            ),
+        )
+        app.extensions["sqlalchemy"].session.add(drawing_job)
+        app.extensions["sqlalchemy"].session.commit()
+        preview_export = ExportFile(
+            project_id=project.id,
+            drawing_job_id=drawing_job.id,
+            filename="preview.svg",
+            file_format="svg",
+            file_path=f"project_{project.id}/preview.svg",
+            status="generated",
+        )
+        app.extensions["sqlalchemy"].session.add(preview_export)
+        app.extensions["sqlalchemy"].session.commit()
+        preview_path = Path(app.config["EXPORT_FOLDER"]) / preview_export.file_path
+        preview_path.parent.mkdir(parents=True, exist_ok=True)
+        preview_path.write_text("<svg xmlns='http://www.w3.org/2000/svg'></svg>", encoding="utf-8")
+        return project.id, drawing_job.id
+
+
 def test_dashboard_route():
     app = create_app("testing")
     reset_test_upload_dirs(app)
@@ -464,3 +509,71 @@ def test_preview_generated_drawing_returns_svg():
 
     assert response.status_code == 200
     assert response.mimetype == "image/svg+xml"
+
+
+def test_export_drawing_to_pdf_and_show_history():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+    project_id, drawing_job_id = create_completed_drawing_job(app, project_name="Pieza PDF")
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/drawings/{drawing_job_id}/export",
+        data={"export_format": "pdf"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Exportacion PDF generada correctamente." in response.data
+    assert b"Descargar PDF" in response.data
+
+    with app.app_context():
+        export_file = ExportFile.query.filter_by(
+            project_id=project_id,
+            drawing_job_id=drawing_job_id,
+            file_format="pdf",
+        ).first()
+        assert export_file is not None
+        export_path = Path(app.config["EXPORT_FOLDER"]) / export_file.file_path
+        assert export_path.exists()
+        assert export_path.read_bytes().startswith(b"%PDF")
+        export_id = export_file.id
+
+    download_response = client.get(f"/projects/{project_id}/exports/{export_id}/download")
+    assert download_response.status_code == 200
+    assert download_response.mimetype == "application/pdf"
+
+
+def test_export_drawing_to_dxf_and_download_file():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+    project_id, drawing_job_id = create_completed_drawing_job(app, project_name="Pieza DXF")
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/drawings/{drawing_job_id}/export",
+        data={"export_format": "dxf"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Exportacion DXF generada correctamente." in response.data
+    assert b"Descargar DXF" in response.data
+
+    with app.app_context():
+        export_file = ExportFile.query.filter_by(
+            project_id=project_id,
+            drawing_job_id=drawing_job_id,
+            file_format="dxf",
+        ).first()
+        assert export_file is not None
+        export_path = Path(app.config["EXPORT_FOLDER"]) / export_file.file_path
+        assert export_path.exists()
+        content = export_path.read_text(encoding="utf-8")
+        assert "SECTION" in content
+        assert "Vista frontal" in content
+        export_id = export_file.id
+
+    download_response = client.get(f"/projects/{project_id}/exports/{export_id}/download")
+    assert download_response.status_code == 200
+    assert download_response.mimetype == "application/dxf"

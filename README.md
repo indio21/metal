@@ -1,6 +1,6 @@
 # Metal MVP
 
-Base para un MVP web orientado a metalurgica. Esta Fase 6 extiende la app Flask existente con generacion de drawing preliminar 2D para piezas individuales, usando arquitectura equivalente a TechDraw con fallback SVG controlado.
+Base para un MVP web orientado a metalurgica. Esta Fase 7 extiende la app Flask existente con generacion de drawing preliminar 2D, preview SVG y exportacion a PDF/DXF para piezas individuales.
 
 ## Alcance actual
 
@@ -14,6 +14,8 @@ Base para un MVP web orientado a metalurgica. Esta Fase 6 extiende la app Flask 
 - Arquitectura base tipo TechDraw con fallback SVG controlado
 - Registro del drawing en `DrawingJob` y `ExportFile`
 - Preview SVG basico del plano generado
+- Exportacion desacoplada a PDF y DXF desde el detalle del proyecto
+- Historial de exportaciones por pieza con descarga directa
 
 ## Modelos disponibles
 
@@ -29,9 +31,12 @@ Base para un MVP web orientado a metalurgica. Esta Fase 6 extiende la app Flask 
 2. Subir un archivo valido STEP/IGES en el detalle del proyecto.
 3. Ejecutar `Analizar modelo` sobre el archivo asociado.
 4. Ejecutar `Generar drawing`.
-5. Si el entorno dispone de FreeCAD/TechDraw, la arquitectura queda preparada para usarlo.
-6. Si no esta disponible, se genera una hoja SVG preliminar equivalente usando el analisis previo.
-7. El resultado se guarda en `DrawingJob` y `ExportFile`, y se muestra en el detalle.
+5. Revisar el preview SVG generado en el detalle del proyecto.
+6. Exportar el drawing a `PDF` o `DXF`.
+7. Descargar cada exportacion desde el historial del proyecto.
+8. Si el entorno dispone de FreeCAD/TechDraw, la arquitectura queda preparada para usarlo.
+9. Si no esta disponible, se genera una hoja SVG preliminar equivalente usando el analisis previo.
+10. El resultado se guarda en `DrawingJob` y `ExportFile`, y se muestra en el detalle.
 
 ## Configuracion de FreeCAD
 
@@ -40,6 +45,7 @@ La app sigue funcionando aunque FreeCAD no este instalado. En ese caso:
 - el upload sigue operativo
 - el analisis queda en fallback controlado
 - la generacion de drawing usa el generador SVG preliminar
+- la exportacion PDF/DXF sigue disponible si las dependencias Python estan instaladas
 - el usuario ve un error amigable en la UI
 
 ### Windows
@@ -66,6 +72,15 @@ python run.py
 ```
 
 Si `FREECAD_LIB_PATH` no apunta a una instalacion valida, la app mostrara el fallback de error controlado.
+
+## Dependencias de exportacion
+
+La Fase 7 agrega estas dependencias Python:
+
+- `reportlab` para generar PDF
+- `ezdxf` para generar DXF
+
+Quedan incluidas en `requirements.txt`. Si el entorno no las tiene instaladas, la UI muestra un mensaje claro al intentar exportar.
 
 ## Estructura del proyecto
 
@@ -136,22 +151,25 @@ FREECAD_LIB_PATH=C:\Program Files\FreeCAD 0.21\bin
 pytest
 ```
 
-## Estado funcional de la Fase 6
+## Estado funcional de la Fase 7
 
 - Ya podes crear proyectos y subirles archivos STEP/IGES validos.
 - Ya podes intentar analizar un modelo desde el detalle del proyecto.
 - Ya podes generar un drawing preliminar 2D desde el detalle del proyecto.
 - El preview basico queda persistido como SVG y asociado al proyecto.
+- Ya podes exportar el drawing a PDF y DXF desde el detalle del proyecto.
+- Ya podes descargar las exportaciones y consultar su historial por pieza.
 - Si FreeCAD esta disponible, la arquitectura queda lista para integrarlo de forma mas profunda.
 - Si FreeCAD o TechDraw no estan disponibles, la app usa un fallback SVG controlado y mantiene el flujo operativo.
-- Todavia no hay exportacion final completa ni Ollama.
+- Todavia no hay Ollama.
 
 ## Como retomar si se interrumpe
 
 1. Revisar `README.md`, `CHANGELOG.md` y `NEXT_STEPS.md`.
 2. Activar `.venv`.
-3. Si queres analisis/drawing con FreeCAD, verificar `FREECAD_LIB_PATH`.
-4. Ejecutar `python init_db.py` para asegurar la base.
-5. Validar con `pytest`.
-6. Levantar la app con `python run.py`.
-7. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.
+3. Ejecutar `pip install -r requirements.txt` si falta alguna dependencia de exportacion.
+4. Si queres analisis/drawing con FreeCAD, verificar `FREECAD_LIB_PATH`.
+5. Ejecutar `python init_db.py` para asegurar la base.
+6. Validar con `pytest`.
+7. Levantar la app con `python run.py`.
+8. Continuar unicamente con la siguiente fase pendiente, reutilizando la estructura actual.

@@ -55,7 +55,7 @@
         <span class="section-kicker">Modelo CAD</span>
         <h2 class="h5 mt-2 mb-3">Subir STEP o IGES</h2>
         <p class="small text-secondary mb-3">
-          Formatos aceptados: `.step`, `.stp`, `.iges`, `.igs`. Todavia no se procesa el modelo con FreeCAD.
+          Formatos aceptados: `.step`, `.stp`, `.iges`, `.igs`. La importacion con FreeCAD depende del entorno local y mantiene fallback controlado.
         </p>
         <form method="post" action="{{ url_for('projects.upload_model', project_id=project.id) }}" enctype="multipart/form-data">
           <div class="mb-3">
@@ -86,7 +86,7 @@
           </div>
         </div>
         <p class="small text-secondary mt-3 mb-0">
-          Estos contadores quedan listos para activarse cuando agreguemos uploads y generacion de drawing.
+          El flujo ya contempla carga CAD, analisis, drawing preliminar y exportaciones derivadas por formato.
         </p>
         {% if project.uploaded_models %}
           <form method="post" action="{{ url_for('projects.generate_drawing', project_id=project.id) }}" class="mt-3">
@@ -209,6 +209,16 @@
               <div class="small text-secondary mb-3">
                 Escala: {{ drawing.get("scale_label", "Sin escala") }}
               </div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <form method="post" action="{{ url_for('projects.export_drawing', project_id=project.id, drawing_job_id=latest_drawing_job.id) }}">
+                  <input type="hidden" name="export_format" value="pdf">
+                  <button class="btn btn-sm btn-dark" type="submit">Exportar PDF</button>
+                </form>
+                <form method="post" action="{{ url_for('projects.export_drawing', project_id=project.id, drawing_job_id=latest_drawing_job.id) }}">
+                  <input type="hidden" name="export_format" value="dxf">
+                  <button class="btn btn-sm btn-outline-dark" type="submit">Exportar DXF</button>
+                </form>
+              </div>
               {% set preview = latest_drawing_job.export_files|selectattr('file_format', 'equalto', 'svg')|list|first %}
               {% if preview %}
                 <a class="btn btn-sm btn-outline-dark mb-3" href="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=preview.id) }}" target="_blank">
@@ -233,6 +243,50 @@
         {% else %}
           <p class="text-secondary mb-0">
             Todavia no se genero ningun drawing preliminar para esta pieza.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Exportaciones</span>
+        <h2 class="h5 mt-2 mb-3">Historial del proyecto</h2>
+        {% if export_history %}
+          <div class="upload-list">
+            {% for export in export_history %}
+              <div class="upload-item">
+                <div class="d-flex flex-wrap justify-content-between gap-2">
+                  <div class="fw-semibold text-break">
+                    {{ export.filename or ("export." ~ export.file_format) }}
+                  </div>
+                  <span class="small text-secondary">
+                    {{ export.created_at.strftime("%Y-%m-%d %H:%M") }}
+                  </span>
+                </div>
+                <div class="small text-secondary">
+                  {{ export.file_format|upper }} - Estado {{ export.status }}
+                </div>
+                <div class="small text-secondary text-break">
+                  {{ export.file_path or "Sin ruta almacenada" }}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  {% if export.file_format == "svg" %}
+                    <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=export.id) }}" target="_blank">
+                      Abrir preview
+                    </a>
+                  {% else %}
+                    <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.download_export', project_id=project.id, export_id=export.id) }}">
+                      Descargar {{ export.file_format|upper }}
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no hay exportaciones registradas para esta pieza.
           </p>
         {% endif %}
       </div>

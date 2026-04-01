@@ -6,6 +6,12 @@ from app.cad.cad_import_service import analyze_project_model
 from app.cad.techdraw_service import DrawingGenerationError, generate_preliminary_drawing, resolve_export_path
 from app.extensions import db
 from app.models import DrawingJob, ExportFile, Project, UploadedModel
+from app.services.export_service import (
+    ExportDependencyError,
+    ExportGenerationError,
+    generate_export_file,
+    resolve_generated_export_path,
+)
 from app.services.project_service import (
     PROJECT_STATUS_OPTIONS,
     build_project_form_data,
@@ -77,11 +83,13 @@ def detail(project_id: int):
         .order_by(DrawingJob.created_at.desc())
         .first()
     )
+    export_history = sorted(project.export_files, key=lambda export: export.created_at, reverse=True)
     return render_template(
         "projects/detail.html",
         project=project,
         latest_analysis_job=latest_analysis_job,
         latest_drawing_job=latest_drawing_job,
+        export_history=export_history,
     )
 
 
@@ -193,6 +201,39 @@ def generate_drawing(project_id: int):
     return redirect(url_for("projects.detail", project_id=project.id))
 
 
+@projects_bp.post("/<int:project_id>/drawings/<int:drawing_job_id>/export")
+def export_drawing(project_id: int, drawing_job_id: int):
+    project = db.get_or_404(Project, project_id)
+    drawing_job = db.get_or_404(DrawingJob, drawing_job_id)
+    export_format = (request.form.get("export_format") or "").strip().lower()
+
+    if drawing_job.project_id != project.id:
+        flash("El drawing seleccionado no pertenece a este proyecto.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    try:
+        export_file = generate_export_file(
+            project=project,
+            drawing_job=drawing_job,
+            export_root=current_app.config["EXPORT_FOLDER"],
+            target_format=export_format,
+        )
+    except ExportDependencyError as error:
+        flash(str(error), "warning")
+    except ExportGenerationError as error:
+        flash(str(error), "danger")
+    except SQLAlchemyError:
+        rollback_session()
+        flash("No se pudo registrar la exportacion del drawing.", "danger")
+    else:
+        flash(
+            f"Exportacion {export_file.file_format.upper()} generada correctamente.",
+            "success",
+        )
+
+    return redirect(url_for("projects.detail", project_id=project.id))
+
+
 @projects_bp.route("/<int:project_id>/edit", methods=["GET", "POST"])
 def edit(project_id: int):
     project = db.get_or_404(Project, project_id)
@@ -284,3 +325,32 @@ def preview_drawing(project_id: int, export_id: int):
         return redirect(url_for("projects.detail", project_id=project.id))
 
     return send_file(file_path, mimetype="image/svg+xml")
+
+
+@projects_bp.get("/<int:project_id>/exports/<int:export_id>/download")
+def download_export(project_id: int, export_id: int):
+    project = db.get_or_404(Project, project_id)
+    export_file = db.get_or_404(ExportFile, export_id)
+
+    if export_file.project_id != project.id:
+        flash("La exportacion solicitada no pertenece a este proyecto.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    try:
+        file_path = resolve_generated_export_path(current_app.config["EXPORT_FOLDER"], export_file)
+    except ExportGenerationError as error:
+        flash(str(error), "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    mimetype = {
+        "pdf": "application/pdf",
+        "dxf": "application/dxf",
+        "svg": "image/svg+xml",
+    }.get(export_file.file_format, "application/octet-stream")
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=export_file.filename,
+        mimetype=mimetype,
+    )

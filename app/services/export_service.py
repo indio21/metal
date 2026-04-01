@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from uuid import uuid4
 
+from app.drawing.template_service import draw_axial_sheet_dxf, draw_axial_sheet_pdf
 from app.extensions import db
 from app.models import DrawingJob, ExportFile, Project
 
@@ -79,6 +80,21 @@ def resolve_generated_export_path(export_root: Path, export_file: ExportFile) ->
 
 
 def _export_pdf(*, drawing_job: DrawingJob, project: Project, export_path: Path) -> str:
+    drawing = drawing_job.analysis_data
+    if drawing_job.output_type == "axial_sheet" and drawing.get("sheet_type") == "axial_turned_sheet":
+        try:
+            from reportlab.pdfgen import canvas
+        except ImportError as error:
+            raise ExportDependencyError(
+                "La exportacion a PDF requiere reportlab. Ejecuta 'pip install reportlab'."
+            ) from error
+
+        pdf = canvas.Canvas(str(export_path), pagesize=(drawing["sheet_width"], drawing["sheet_height"]))
+        draw_axial_sheet_pdf(pdf, drawing, project.resolved_part_name)
+        pdf.showPage()
+        pdf.save()
+        return "reportlab_axial_sheet"
+
     try:
         from reportlab.lib.pagesizes import A4, landscape
         from reportlab.pdfgen import canvas
@@ -169,6 +185,21 @@ def _draw_pdf_views(pdf, dimensions: dict[str, float], page_width: float, page_h
 
 
 def _export_dxf(*, drawing_job: DrawingJob, project: Project, export_path: Path) -> str:
+    drawing = drawing_job.analysis_data
+    if drawing_job.output_type == "axial_sheet" and drawing.get("sheet_type") == "axial_turned_sheet":
+        try:
+            import ezdxf
+        except ImportError as error:
+            raise ExportDependencyError(
+                "La exportacion a DXF requiere ezdxf. Ejecuta 'pip install ezdxf'."
+            ) from error
+
+        doc = ezdxf.new("R2010")
+        msp = doc.modelspace()
+        draw_axial_sheet_dxf(msp, drawing, project.resolved_part_name)
+        doc.saveas(export_path)
+        return "ezdxf_axial_sheet"
+
     try:
         import ezdxf
     except ImportError as error:
@@ -176,7 +207,6 @@ def _export_dxf(*, drawing_job: DrawingJob, project: Project, export_path: Path)
             "La exportacion a DXF requiere ezdxf. Ejecuta 'pip install ezdxf'."
         ) from error
 
-    drawing = drawing_job.analysis_data
     dimensions = drawing.get("dimensions", {})
     dim_x = float(dimensions.get("x", 100.0) or 100.0)
     dim_y = float(dimensions.get("y", 50.0) or 50.0)

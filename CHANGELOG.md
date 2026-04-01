@@ -2,6 +2,24 @@
 
 ## 2026-04-01
 
+- Se implementaron de forma incremental las Fases 6 y 7 de la version 2.0 sobre el repositorio existente.
+- Se agrego `app/drawing/dimensioning_service.py` para construir acotado basico especializado en piezas torneadas:
+  - longitudes axiales
+  - diametros
+  - radio simple
+  - chaflan simple
+  - notas generales
+- Se agrego `app/drawing/template_service.py` para generar una hoja axial preliminar con:
+  - marco exterior
+  - cajetin tecnico
+  - preview SVG vectorial
+  - lateral principal
+  - extremo
+  - corte longitudinal
+- Se incorporo la nueva accion `Generar hoja axial` en el detalle del proyecto.
+- Se extendio `app/services/export_service.py` para exportar la hoja axial a PDF vectorial y DXF editable sin rasterizar.
+- Se agrego historial de exportaciones y preview SVG dentro de la UI del proyecto.
+- Se ampliaron las pruebas para cubrir generacion de hoja axial y exportaciones PDF/DXF del flujo 2.0.
 - Se implementaron de forma incremental las Fases 4 y 5 de la version 2.0 sobre el repositorio existente.
 - Se extendio `app/cad/cad_import_service.py` para agregar:
   - eje dominante

@@ -60,6 +60,56 @@ def create_completed_drawing_job(app, *, project_name: str = "Pieza exportable")
         return project.id, drawing_job.id
 
 
+def seed_axial_analysis(app, *, project_name: str = "Pieza axial lista") -> tuple[int, int]:
+    with app.app_context():
+        project = Project(
+            name=project_name,
+            project_name="Cliente axial",
+            part_name=project_name,
+            revision="B",
+            status="ready",
+            author="Equipo CAD",
+            material="SAE 1045",
+            finish="Torneado fino",
+        )
+        app.extensions["sqlalchemy"].session.add(project)
+        app.extensions["sqlalchemy"].session.commit()
+        uploaded_model = UploadedModel(
+            project_id=project.id,
+            original_filename="axial.step",
+            stored_filename="axial.step",
+            file_format="step",
+            storage_path=f"project_{project.id}/axial.step",
+            status="uploaded",
+        )
+        app.extensions["sqlalchemy"].session.add(uploaded_model)
+        app.extensions["sqlalchemy"].session.commit()
+        upload_path = Path(app.config["UPLOAD_FOLDER"]) / uploaded_model.storage_path
+        upload_path.parent.mkdir(parents=True, exist_ok=True)
+        upload_path.write_bytes(b"step-data")
+        analysis_job = DrawingJob(
+            project_id=project.id,
+            uploaded_model_id=uploaded_model.id,
+            status="completed",
+            output_type="model_analysis",
+            analyzer_backend="demo_fallback",
+            analysis_summary=json.dumps(
+                {
+                    "backend": "demo_fallback",
+                    "dimensions": {"x": 210.0, "y": 56.0, "z": 54.0},
+                    "dominant_axis": "x",
+                    "axial_ratio": 3.88,
+                    "transverse_similarity": 0.964,
+                    "family_classification": "axial_turned_candidate",
+                    "classification_note": "Compatible con estrategia axial.",
+                }
+            ),
+        )
+        app.extensions["sqlalchemy"].session.add(analysis_job)
+        app.extensions["sqlalchemy"].session.commit()
+        return project.id, uploaded_model.id
+
+
 def test_dashboard_route():
     app = create_app("testing")
     reset_test_upload_dirs(app)
@@ -510,6 +560,92 @@ def test_generate_axial_strategy_builds_three_specific_views():
         strategy_data = strategy_job.analysis_data
         assert strategy_data.get("layout_name") == "axial_three_view_layout"
         assert len(strategy_data.get("views", [])) == 3
+
+
+def test_generate_axial_sheet_creates_dimensioned_preview_and_svg_export():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+    project_id, model_id = seed_axial_analysis(app, project_name="Eje dimensionado")
+
+    client = app.test_client()
+    response = client.post(
+        f"/projects/{project_id}/generate-axial-sheet",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert b"Hoja axial preliminar generada correctamente." in response.data
+    assert b"Exportar PDF" in response.data
+    assert b"Exportar DXF" in response.data
+
+    with app.app_context():
+        sheet_job = DrawingJob.query.filter_by(project_id=project_id, output_type="axial_sheet").first()
+        assert sheet_job is not None
+        assert sheet_job.status == "completed"
+        sheet_data = sheet_job.analysis_data
+        assert sheet_data.get("sheet_type") == "axial_turned_sheet"
+        assert sheet_data.get("dimension_plan", {}).get("overall_length") == 210.0
+        assert sheet_data.get("dimension_plan", {}).get("outer_diameter") == 56.0
+        assert "svg_preview" in sheet_data
+        preview_export = ExportFile.query.filter_by(
+            project_id=project_id,
+            drawing_job_id=sheet_job.id,
+            file_format="svg",
+        ).first()
+        assert preview_export is not None
+        preview_path = Path(app.config["EXPORT_FOLDER"]) / preview_export.file_path
+        assert preview_path.exists()
+        assert "<svg" in preview_path.read_text(encoding="utf-8")
+
+
+def test_export_axial_sheet_to_pdf_and_dxf():
+    app = create_app("testing")
+    reset_test_upload_dirs(app)
+    project_id, model_id = seed_axial_analysis(app, project_name="Eje exportable axial")
+
+    client = app.test_client()
+    sheet_response = client.post(
+        f"/projects/{project_id}/generate-axial-sheet",
+        data={"model_id": str(model_id)},
+        follow_redirects=True,
+    )
+    assert sheet_response.status_code == 200
+
+    with app.app_context():
+        sheet_job = DrawingJob.query.filter_by(project_id=project_id, output_type="axial_sheet").first()
+        assert sheet_job is not None
+        sheet_job_id = sheet_job.id
+
+    pdf_response = client.post(
+        f"/projects/{project_id}/drawings/{sheet_job_id}/export",
+        data={"export_format": "pdf"},
+        follow_redirects=True,
+    )
+    assert pdf_response.status_code == 200
+    assert b"Exportacion PDF generada correctamente." in pdf_response.data
+
+    dxf_response = client.post(
+        f"/projects/{project_id}/drawings/{sheet_job_id}/export",
+        data={"export_format": "dxf"},
+        follow_redirects=True,
+    )
+    assert dxf_response.status_code == 200
+    assert b"Exportacion DXF generada correctamente." in dxf_response.data
+
+    with app.app_context():
+        pdf_export = ExportFile.query.filter_by(project_id=project_id, drawing_job_id=sheet_job_id, file_format="pdf").first()
+        dxf_export = ExportFile.query.filter_by(project_id=project_id, drawing_job_id=sheet_job_id, file_format="dxf").first()
+        assert pdf_export is not None
+        assert dxf_export is not None
+        pdf_path = Path(app.config["EXPORT_FOLDER"]) / pdf_export.file_path
+        dxf_path = Path(app.config["EXPORT_FOLDER"]) / dxf_export.file_path
+        assert pdf_path.exists()
+        assert dxf_path.exists()
+        assert pdf_path.read_bytes().startswith(b"%PDF")
+        dxf_content = dxf_path.read_text(encoding="utf-8")
+        assert "Vista lateral principal" in dxf_content
+        assert "Corte longitudinal" in dxf_content
 
 
 def test_full_flow_generates_dxf_without_freecad(monkeypatch):

@@ -6,6 +6,7 @@ from app.ai.ollama_service import get_ollama_runtime_status, request_project_ass
 from app.cad.cad_import_service import analyze_project_model
 from app.cad.techdraw_service import DrawingGenerationError, generate_preliminary_drawing, resolve_export_path
 from app.drawing.drawing_strategy_service import DrawingStrategyError, generate_axial_drawing_strategy
+from app.drawing.template_service import AxialSheetError, generate_axial_technical_sheet
 from app.extensions import db
 from app.models import DrawingJob, ExportFile, Project, UploadedModel
 from app.services.export_service import (
@@ -91,6 +92,11 @@ def detail(project_id: int):
         .order_by(DrawingJob.created_at.desc())
         .first()
     )
+    latest_axial_sheet_job = (
+        DrawingJob.query.filter_by(project_id=project.id, output_type="axial_sheet")
+        .order_by(DrawingJob.created_at.desc())
+        .first()
+    )
     export_history = sorted(project.export_files, key=lambda export: export.created_at, reverse=True)
     ai_result = session.get(PROJECT_AI_RESULT_KEY)
     if ai_result and ai_result.get("project_id") != project.id:
@@ -101,6 +107,7 @@ def detail(project_id: int):
         latest_analysis_job=latest_analysis_job,
         latest_drawing_job=latest_drawing_job,
         latest_strategy_job=latest_strategy_job,
+        latest_axial_sheet_job=latest_axial_sheet_job,
         export_history=export_history,
         ai_result=ai_result,
         ollama_status=get_ollama_runtime_status(current_app.config),
@@ -233,6 +240,59 @@ def generate_axial_strategy(project_id: int):
     else:
         flash(
             strategy_job.error_message or "No se pudo construir la estrategia axial para esta pieza.",
+            "warning",
+        )
+
+    return redirect(url_for("projects.detail", project_id=project.id))
+
+
+@projects_bp.post("/<int:project_id>/generate-axial-sheet")
+def generate_axial_sheet(project_id: int):
+    project = db.get_or_404(Project, project_id)
+    model_id = request.form.get("model_id", type=int)
+
+    if model_id:
+        uploaded_model = db.get_or_404(UploadedModel, model_id)
+        if uploaded_model.project_id != project.id:
+            flash("El archivo seleccionado no pertenece a este proyecto.", "danger")
+            return redirect(url_for("projects.detail", project_id=project.id))
+    else:
+        uploaded_model = (
+            UploadedModel.query.filter_by(project_id=project.id)
+            .order_by(UploadedModel.created_at.desc())
+            .first()
+        )
+
+    if uploaded_model is None:
+        flash("Debes subir un archivo STEP o IGES antes de generar la hoja axial.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    try:
+        sheet_job = generate_axial_technical_sheet(
+            project=project,
+            uploaded_model=uploaded_model,
+            export_root=current_app.config["EXPORT_FOLDER"],
+            upload_root=current_app.config["UPLOAD_FOLDER"],
+            freecad_lib_path=current_app.config.get("FREECAD_LIB_PATH"),
+            default_tolerance_note=current_app.config.get(
+                "DEFAULT_TOLERANCE_NOTE",
+                "Salvo indicacion contraria: tolerancia general ISO 2768-m.",
+            ),
+            default_edge_note=current_app.config.get(
+                "DEFAULT_EDGE_NOTE",
+                "Eliminar cantos vivos y rebabas. Romper aristas 0.2-0.5 mm.",
+            ),
+        )
+    except (AxialSheetError, SQLAlchemyError):
+        rollback_session()
+        flash("No se pudo registrar la hoja axial preliminar.", "danger")
+        return redirect(url_for("projects.detail", project_id=project.id))
+
+    if sheet_job.status == "completed":
+        flash("Hoja axial preliminar generada correctamente.", "success")
+    else:
+        flash(
+            sheet_job.error_message or "No se pudo construir la hoja axial preliminar.",
             "warning",
         )
 

@@ -21,6 +21,14 @@ class Config:
     UPLOAD_FOLDER = BASE_DIR / "uploads"
     EXPORT_FOLDER = BASE_DIR / "exports"
     FREECAD_LIB_PATH = os.getenv("FREECAD_LIB_PATH")
+    DEFAULT_TOLERANCE_NOTE = os.getenv(
+        "DEFAULT_TOLERANCE_NOTE",
+        "Salvo indicacion contraria: tolerancia general ISO 2768-m.",
+    )
+    DEFAULT_EDGE_NOTE = os.getenv(
+        "DEFAULT_EDGE_NOTE",
+        "Eliminar cantos vivos y rebabas. Romper aristas 0.2-0.5 mm.",
+    )
     OLLAMA_ENABLED = _as_bool(os.getenv("OLLAMA_ENABLED"), default=False)
     OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")

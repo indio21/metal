@@ -89,12 +89,16 @@
             <strong class="stack-value">{{ project.drawing_jobs|length }}</strong>
           </div>
           <div class="stack-item">
+            <span class="stack-label">Hojas axiales generadas</span>
+            <strong class="stack-value">{{ project.drawing_jobs|selectattr('output_type', 'equalto', 'axial_sheet')|list|length }}</strong>
+          </div>
+          <div class="stack-item">
             <span class="stack-label">Exportaciones heredadas</span>
             <strong class="stack-value">{{ project.export_files|length }}</strong>
           </div>
         </div>
         <p class="small text-secondary mt-3 mb-0">
-          En esta etapa de la version 2.0 nos centramos en persistencia del proyecto y gestion segura del modelo STEP/IGES.
+          En esta etapa de la version 2.0 el flujo ya cubre analisis axial, estrategia de vistas, hoja tecnica preliminar y exportaciones vectoriales.
         </p>
       </div>
     </div>
@@ -254,6 +258,110 @@
         {% else %}
           <p class="text-secondary mb-0">
             Todavia no se genero la estrategia de vista lateral, vista de extremo y corte longitudinal.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Hoja tecnica</span>
+        <h2 class="h5 mt-2 mb-3">Plano axial preliminar</h2>
+        {% if project.uploaded_models %}
+          <form method="post" action="{{ url_for('projects.generate_axial_sheet', project_id=project.id) }}" class="mb-3">
+            <button class="btn btn-dark w-100" type="submit">Generar hoja axial</button>
+          </form>
+        {% endif %}
+
+        {% if latest_axial_sheet_job %}
+          <div class="upload-item">
+            <div class="d-flex flex-wrap justify-content-between gap-2 mb-2">
+              <strong>Estado: {{ latest_axial_sheet_job.status }}</strong>
+              <span class="small text-secondary">
+                {{ latest_axial_sheet_job.finished_at.strftime("%Y-%m-%d %H:%M") if latest_axial_sheet_job.finished_at else "En proceso" }}
+              </span>
+            </div>
+            {% if latest_axial_sheet_job.status == "completed" %}
+              {% set sheet = latest_axial_sheet_job.analysis_data %}
+              <div class="small text-secondary mb-3">
+                Template: {{ sheet.get("template_name", "Sin template") }} | Escala: {{ sheet.get("scale_label", "Sin escala") }}
+              </div>
+              <div class="metric-list mb-3">
+                <div class="metric-row">
+                  <span>Longitud axial total</span>
+                  <strong>{{ sheet.get("dimension_plan", {}).get("overall_length", "-") }} mm</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Diametro exterior</span>
+                  <strong>{{ sheet.get("dimension_plan", {}).get("outer_diameter", "-") }} mm</strong>
+                </div>
+                <div class="metric-row">
+                  <span>Diametro interior</span>
+                  <strong>{{ sheet.get("dimension_plan", {}).get("bore_diameter", "-") }} mm</strong>
+                </div>
+              </div>
+              {% if sheet.get("notes") %}
+                <div class="small text-secondary mb-3">
+                  {% for note in sheet.get("notes", []) %}
+                    <div>{{ note }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              {% if sheet.get("svg_preview") %}
+                <div class="drawing-preview-frame mb-3">
+                  {{ sheet.get("svg_preview") | safe }}
+                </div>
+              {% endif %}
+              <div class="d-flex flex-wrap gap-2">
+                <form method="post" action="{{ url_for('projects.export_drawing', project_id=project.id, drawing_job_id=latest_axial_sheet_job.id) }}">
+                  <input type="hidden" name="export_format" value="pdf">
+                  <button class="btn btn-sm btn-primary" type="submit">Exportar PDF</button>
+                </form>
+                <form method="post" action="{{ url_for('projects.export_drawing', project_id=project.id, drawing_job_id=latest_axial_sheet_job.id) }}">
+                  <input type="hidden" name="export_format" value="dxf">
+                  <button class="btn btn-sm btn-outline-dark" type="submit">Exportar DXF</button>
+                </form>
+              </div>
+            {% else %}
+              <p class="text-secondary mb-0">
+                {{ latest_axial_sheet_job.error_message or "No fue posible construir la hoja axial preliminar." }}
+              </p>
+            {% endif %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Todavia no se genero la hoja tecnica con acotado basico, cajetin y vista axial especializada.
+          </p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+      <div class="card-body">
+        <span class="section-kicker">Exportaciones</span>
+        <h2 class="h5 mt-2 mb-3">Historial vectorial</h2>
+        {% if export_history %}
+          <div class="upload-list">
+            {% for export in export_history %}
+              <div class="upload-item">
+                <div class="fw-semibold text-break">{{ export.filename or ("export." ~ export.file_format) }}</div>
+                <div class="small text-secondary">
+                  {{ export.file_format|upper }} - {{ export.created_at.strftime("%Y-%m-%d %H:%M") if export.created_at else "Sin fecha" }}
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  {% if export.file_format == "svg" %}
+                    <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('projects.preview_drawing', project_id=project.id, export_id=export.id) }}" target="_blank">Preview</a>
+                  {% endif %}
+                  <a class="btn btn-sm btn-outline-dark" href="{{ url_for('projects.download_export', project_id=project.id, export_id=export.id) }}">
+                    Descargar
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-secondary mb-0">
+            Aun no hay exportaciones registradas para esta pieza.
           </p>
         {% endif %}
       </div>
